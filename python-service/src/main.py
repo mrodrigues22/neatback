@@ -44,7 +44,6 @@ class PostureService:
             _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             frame_base64 = base64.b64encode(buffer).decode('utf-8')
             result['frame'] = frame_base64
-            print(f"Frame size: {len(frame_base64)} bytes, angle: {result['neck_angle']:.1f}°")
             
             return result
         return None
