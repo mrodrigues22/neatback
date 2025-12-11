@@ -5,6 +5,8 @@ using NeatBack.Models;
 using NeatBack.Services;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
 using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using Windows.Graphics.Imaging;
@@ -23,13 +25,39 @@ public sealed partial class MainPage : Page
     private Timer? _frameTimer;
     private SoftwareBitmap? _latestBitmap;
     private SoftwareBitmapSource? _bitmapSource;
+    // Local references bound via FindName to avoid reliance on generated fields
+    private TextBlock? _statusText;
+    private ProgressBar? _badPostureProgress;
+    private TextBlock? _pitchText;
+    private TextBlock? _distanceText;
+    private TextBlock? _badDurationText;
+    private Button? _startButton;
+    private Button? _savePostureButton;
+    private Slider? _pitchThresholdSlider;
+    private Slider? _distanceThresholdSlider;
+    private TextBlock? _pitchThresholdValue;
+    private TextBlock? _distanceThresholdValue;
+    private Image? _cameraPreview;
     
     public MainPage()
     {
-        InitializeComponent();
+        this.InitializeComponent();
         _wsClient = new WebSocketClient();
         _notificationService = new NotificationService();
         _bitmapSource = new SoftwareBitmapSource();
+        // Bind local references to XAML controls
+        _statusText = FindName("StatusText") as TextBlock;
+        _badPostureProgress = FindName("BadPostureProgress") as ProgressBar;
+        _pitchText = FindName("PitchText") as TextBlock;
+        _distanceText = FindName("DistanceText") as TextBlock;
+        _badDurationText = FindName("BadDurationText") as TextBlock;
+        _startButton = FindName("StartButton") as Button;
+        _savePostureButton = FindName("SavePostureButton") as Button;
+        _pitchThresholdSlider = FindName("PitchThresholdSlider") as Slider;
+        _distanceThresholdSlider = FindName("DistanceThresholdSlider") as Slider;
+        _pitchThresholdValue = FindName("PitchThresholdValue") as TextBlock;
+        _distanceThresholdValue = FindName("DistanceThresholdValue") as TextBlock;
+        _cameraPreview = FindName("CameraPreview") as Image;
         
         // Subscribe to events
         _wsClient.PostureDataReceived += OnPostureDataReceived;
@@ -44,7 +72,7 @@ public sealed partial class MainPage : Page
             if (!_isMonitoring)
             {
                 // Start monitoring
-                StatusText.Text = "Initializing camera...";
+                if (_statusText != null) _statusText.Text = "Initializing camera...";
                 
                 // Initialize camera
                 _mediaCapture = new MediaCapture();
@@ -84,13 +112,13 @@ public sealed partial class MainPage : Page
                     
                     if (status != MediaFrameReaderStartStatus.Success)
                     {
-                        StatusText.Text = $"Error: Frame reader failed to start: {status}";
+                        if (_statusText != null) _statusText.Text = $"Error: Frame reader failed to start: {status}";
                         return;
                     }
                 }
                 else
                 {
-                    StatusText.Text = "Error: No camera frame source found";
+                    if (_statusText != null) _statusText.Text = "Error: No camera frame source found";
                     return;
                 }
                 
@@ -101,9 +129,9 @@ public sealed partial class MainPage : Page
                 _frameTimer = new Timer(SendFrameCallback, null, 1000, 1000);
                 
                 _isMonitoring = true;
-                StartButton.Content = "Stop Monitoring";
-                SavePostureButton.IsEnabled = true;
-                StatusText.Text = "Monitoring started. Camera should appear above. Please save your good posture!";
+                if (_startButton != null) _startButton.Content = "Stop Monitoring";
+                if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
+                if (_statusText != null) _statusText.Text = "Monitoring started. Camera should appear above. Please save your good posture!";
                 
                 System.Diagnostics.Debug.WriteLine("Monitoring started successfully");
             }
@@ -115,7 +143,7 @@ public sealed partial class MainPage : Page
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"Error: {ex.Message}";
+            if (_statusText != null) _statusText.Text = $"Error: {ex.Message}";
             System.Diagnostics.Debug.WriteLine($"Error starting monitoring: {ex}");
         }
     }
@@ -150,14 +178,17 @@ public sealed partial class MainPage : Page
             await _wsClient.DisconnectAsync();
         }
         
-        StartButton.Content = "Start Monitoring";
-        SavePostureButton.IsEnabled = false;
-        StatusText.Text = "Monitoring stopped";
-        PitchText.Text = "--°";
-        DistanceText.Text = "-- cm";
-        BadDurationText.Text = "0 s";
-        BadPostureProgress.Value = 0;
-        BadPostureProgress.Visibility = Visibility.Collapsed;
+        if (_startButton != null) _startButton.Content = "Start Monitoring";
+        if (_savePostureButton != null) _savePostureButton.IsEnabled = false;
+        if (_statusText != null) _statusText.Text = "Monitoring stopped";
+        if (_pitchText != null) _pitchText.Text = "--°";
+        if (_distanceText != null) _distanceText.Text = "-- cm";
+        if (_badDurationText != null) _badDurationText.Text = "0 s";
+        if (_badPostureProgress != null)
+        {
+            _badPostureProgress.Value = 0;
+            _badPostureProgress.Visibility = Visibility.Collapsed;
+        }
     }
     
     private int _frameCount = 0;
@@ -212,7 +243,10 @@ public sealed partial class MainPage : Page
                 if (_bitmapSource != null && convertedBitmap != null)
                 {
                     await _bitmapSource.SetBitmapAsync(convertedBitmap);
-                    CameraPreview.Source = _bitmapSource;
+                    if (_cameraPreview != null)
+                    {
+                        _cameraPreview.Source = _bitmapSource;
+                    }
                     System.Diagnostics.Debug.WriteLine("Preview updated successfully");
                 }
                 else
@@ -262,7 +296,7 @@ public sealed partial class MainPage : Page
         var bitmap = _latestBitmap;
         if (bitmap != null && _wsClient != null)
         {
-            StatusText.Text = "Saving good posture...";
+            if (_statusText != null) _statusText.Text = "Saving good posture...";
             await _wsClient.SaveGoodPostureAsync(bitmap);
         }
     }
@@ -274,32 +308,38 @@ public sealed partial class MainPage : Page
             // Update metrics
             if (data.AdjustedPitch.HasValue)
             {
-                PitchText.Text = $"{data.AdjustedPitch.Value:F1}°";
+                if (_pitchText != null) _pitchText.Text = $"{data.AdjustedPitch.Value:F1}°";
             }
             
             if (data.Distance.HasValue)
             {
-                DistanceText.Text = $"{data.Distance.Value:F1} cm";
+                if (_distanceText != null) _distanceText.Text = $"{data.Distance.Value:F1} cm";
             }
             
-            BadDurationText.Text = $"{data.BadDuration} s";
+            if (_badDurationText != null) _badDurationText.Text = $"{data.BadDuration} s";
             
             // Update status
             if (!string.IsNullOrEmpty(data.Error))
             {
-                StatusText.Text = data.Error;
+                if (_statusText != null) _statusText.Text = data.Error;
             }
             else if (data.IsBad)
             {
-                StatusText.Text = $"⚠️ {data.Message}";
-                BadPostureProgress.Visibility = Visibility.Visible;
-                BadPostureProgress.Value = Math.Min(data.BadDuration, 30);
+                if (_statusText != null) _statusText.Text = $"⚠️ {data.Message}";
+                if (_badPostureProgress != null)
+                {
+                    _badPostureProgress.Visibility = Visibility.Visible;
+                    _badPostureProgress.Value = Math.Min(data.BadDuration, 30);
+                }
             }
             else
             {
-                StatusText.Text = "✅ Good posture";
-                BadPostureProgress.Visibility = Visibility.Collapsed;
-                BadPostureProgress.Value = 0;
+                if (_statusText != null) _statusText.Text = "✅ Good posture";
+                if (_badPostureProgress != null)
+                {
+                    _badPostureProgress.Visibility = Visibility.Collapsed;
+                    _badPostureProgress.Value = 0;
+                }
             }
             
             // Send notification if needed
@@ -316,11 +356,11 @@ public sealed partial class MainPage : Page
         {
             if (success)
             {
-                StatusText.Text = "✅ Good posture saved! Monitoring...";
+                if (_statusText != null) _statusText.Text = "✅ Good posture saved! Monitoring...";
             }
             else
             {
-                StatusText.Text = "❌ Failed to save posture. Make sure your face is visible.";
+                if (_statusText != null) _statusText.Text = "❌ Failed to save posture. Make sure your face is visible.";
             }
         });
     }
@@ -331,7 +371,7 @@ public sealed partial class MainPage : Page
         {
             if (success)
             {
-                StatusText.Text = "Thresholds updated";
+                if (_statusText != null) _statusText.Text = "Thresholds updated";
             }
         });
     }
@@ -341,11 +381,13 @@ public sealed partial class MainPage : Page
         if (!_isMonitoring)
             return;
         
-        var pitchThreshold = PitchThresholdSlider.Value;
-        var distanceThreshold = DistanceThresholdSlider.Value;
+        var pitchThreshold = _pitchThresholdSlider != null ? _pitchThresholdSlider.Value : -10;
+        var distanceThreshold = _distanceThresholdSlider != null ? _distanceThresholdSlider.Value : 10;
         
-        PitchThresholdValue.Text = $"{pitchThreshold:F0}°";
-        DistanceThresholdValue.Text = $"{distanceThreshold:F0} cm";
+        if (_pitchThresholdValue != null)
+            _pitchThresholdValue.Text = $"{pitchThreshold:F0}°";
+        if (_distanceThresholdValue != null)
+            _distanceThresholdValue.Text = $"{distanceThreshold:F0} cm";
         
         if (_wsClient != null)
         {
@@ -353,3 +395,4 @@ public sealed partial class MainPage : Page
         }
     }
 }
+
