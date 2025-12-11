@@ -6,37 +6,37 @@ NeatBack uses a **client-server architecture** with asynchronous communication:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           PYTHON SERVICE (Server)                        │
+│                        .NET DESKTOP APP (Client)                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
-│  ┌──────────────┐    ┌─────────────────┐    ┌───────────────────┐     │
-│  │   OpenCV     │───►│  PoseDetector   │───►│ PostureAnalyzer   │     │
-│  │  (Camera)    │    │  (MediaPipe)    │    │  (Angle Calc)     │     │
-│  └──────────────┘    └─────────────────┘    └───────────────────┘     │
+│  ┌──────────────┐    ┌─────────────────┐    ┌──────────────────┐       │
+│  │ MediaCapture │───►│  FrameReader    │───►│ WebSocketClient  │       │
+│  │  (Camera)    │    │  (Process)      │    │  (Send Frames)   │       │
+│  └──────────────┘    └─────────────────┘    └──────────────────┘       │
 │         │                     │                        │                 │
 │         └─────────────────────┴────────────────────────┘                │
+│                              │ Video Frames (base64 PNG)                │
+│  ┌──────────────┐    ┌───────┴────────┐    ┌──────────────────┐       │
+│  │   MainPage   │◄───┤  PostureData   │◄───┤ NotificationSvc  │       │
+│  │   (UI)       │    │   (Model)      │    │  (Alerts)        │       │
+│  └──────────────┘    └────────────────┘    └──────────────────┘       │
+│                              ▲ Posture Analysis Results                 │
+└──────────────────────────────┼───────────────────────────────────────────┘
+                               │ WebSocket (JSON)
+                               │ ws://localhost:8765
+┌──────────────────────────────┼───────────────────────────────────────────┐
 │                              │                                           │
-│                              ▼                                           │
 │                    ┌──────────────────┐                                 │
 │                    │ WebSocketServer  │                                 │
 │                    │ (Port 8765)      │                                 │
 │                    └──────────────────┘                                 │
 │                              │                                           │
-└──────────────────────────────┼───────────────────────────────────────────┘
-                               │ WebSocket (JSON)
-                               │ ws://localhost:8765
-┌──────────────────────────────┼───────────────────────────────────────────┐
-│                              ▼                                           │
-│                    ┌──────────────────┐                                 │
-│                    │ WebSocketClient  │                                 │
-│                    └──────────────────┘                                 │
-│                              │                                           │
-│  ┌──────────────┐    ┌───────┴────────┐    ┌──────────────────┐       │
-│  │   MainPage   │◄───┤  PostureData   │───►│ NotificationSvc  │       │
-│  │   (UI)       │    │   (Model)      │    │  (Alerts)        │       │
-│  └──────────────┘    └────────────────┘    └──────────────────┘       │
+│  ┌──────────────┐    ┌───────┴────────┐    ┌───────────────────┐     │
+│  │   OpenCV     │◄───┤ PostureDetector│◄───┤ PostureAnalyzer   │     │
+│  │  (Decode)    │    │  (MediaPipe)   │    │ (Pitch/Distance)  │     │
+│  └──────────────┘    └────────────────┘    └───────────────────┘     │
 │                                                                           │
-│                        .NET DESKTOP APP (Client)                         │
+│                           PYTHON SERVICE (Server)                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,181 +46,333 @@ NeatBack uses a **client-server architecture** with asynchronous communication:
 
 ### Entry Point: `main.py`
 
-**Purpose**: Orchestrates the entire posture detection pipeline.
+**Purpose**: Orchestrates the WebSocket server and posture analysis pipeline.
 
 ```python
 class PostureService:
     def __init__(self):
-        self.detector = PoseDetector()       # Handles MediaPipe
-        self.analyzer = PostureAnalyzer()     # Calculates angles
-        self.ws_server = WebSocketServer()    # Manages connections
-        self.cap = None                       # OpenCV camera
-        self.running = False                  # Control flag
+        self.detector = PostureDetector()       # Handles MediaPipe Face Landmarker
+        self.analyzer = PostureAnalyzer()       # Tracks posture duration & stats
+        self.ws_server = WebSocketServer()      # Manages connections
+        
+        # Link detector and analyzer to WebSocket server
+        self.ws_server.detector = self.detector
+        self.ws_server.analyzer = self.analyzer
+        
+        self.running = False                    # Control flag
+```
+
+#### Key Method:
+
+**`run()` - async**
+- Main entry point that starts the WebSocket server
+- Waits for client connections
+- Server processes incoming frames from .NET client
+- Returns posture analysis results back to client
+- Handles cleanup on exit (closes detector)
+
+**Flow**:
+```
+.NET Client → Frame (base64 PNG) → WebSocket → Decode → Face Detection → 
+Pitch/Distance Calc → Posture Analysis → Result → WebSocket → .NET Client
+```
+
+---
+
+### Face Detection & Pose Estimation: `pose_detector.py`
+
+**Purpose**: Uses MediaPipe Face Landmarker to detect facial landmarks and calculate head pose.
+
+```python
+class PostureDetector:
+    def __init__(self):
+        # Initialize MediaPipe Face Landmarker
+        options = self.FaceLandmarkerOptions(
+            base_options=self.BaseOptions(model_asset_path='face_landmarker.task'),
+            running_mode=self.VisionRunningMode.VIDEO,
+            num_faces=1,
+            min_face_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+        self.face_landmarker = self.FaceLandmarker.create_from_options(options)
+        
+        # Good posture baseline (set via calibration)
+        self.good_head_pitch_angle = None
+        self.good_head_distance = None
+        
+        # Configurable thresholds
+        self.pitch_threshold = -10  # degrees
+        self.distance_threshold = 10  # cm
+```
+
+#### MediaPipe Face Landmarks
+
+MediaPipe Face Landmarker detects 478 facial landmarks. We use 6 key points for 3D pose estimation:
+
+```
+  33: Left eye outer corner  ◄── We use this
+ 263: Right eye outer corner ◄── We use this
+   1: Nose tip               ◄── We use this
+  61: Left mouth corner      ◄── We use this
+ 291: Right mouth corner     ◄── We use this
+ 199: Chin                   ◄── We use this
 ```
 
 #### Key Methods:
 
-**1. `open_camera()`**
-- Initializes OpenCV VideoCapture on device 0 (default webcam)
-- Sets resolution to 640x480 for optimal performance
-- Lower resolution = faster processing, but less accurate pose detection
+**1. `detect_landmarks(frame, timestamp_ms)`**
 
-**2. `process_frame()` - async**
-- Captures a single frame from the webcam
-- Passes frame to PoseDetector
-- If landmarks are detected, passes them to PostureAnalyzer
-- Returns analysis result (dict with `is_good` and `neck_angle`)
-
-**3. `run()` - async**
-- Main event loop that runs continuously
-- Creates WebSocket server task
-- Processes frames at 10 FPS (0.1 second delay)
-- Sends results to all connected clients
-- Handles cleanup on exit
-
-**Flow**:
-```
-Camera → Frame → PoseDetector → Landmarks → PostureAnalyzer → Result → WebSocket
-```
-
----
-
-### Pose Detection: `pose_detector.py`
-
-**Purpose**: Uses MediaPipe to detect 33 body landmarks from video frames.
-
-```python
-class PoseDetector:
-    def __init__(self):
-        self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose(
-            min_detection_confidence=0.5,  # 50% confidence for initial detection
-            min_tracking_confidence=0.5    # 50% confidence for tracking
-        )
-```
-
-#### MediaPipe Landmarks
-
-MediaPipe detects 33 points on the human body:
-
-```
-     0: Nose
-   7: Left Ear  ◄── We use this
-  11: Left Shoulder  ◄── We use this
-  23: Left Hip  ◄── We use this
-  ... (and 30 others)
-```
-
-#### Key Method: `detect(frame)`
-
-**Input**: BGR image frame from OpenCV
+**Input**: BGR image frame from OpenCV, timestamp in milliseconds
 **Process**:
 1. Converts BGR → RGB (MediaPipe requires RGB)
-2. Runs pose estimation model
-3. Returns landmark coordinates (x, y, z, visibility)
+2. Creates MediaPipe Image object
+3. Runs face landmarker model for video mode
+4. Returns first face's landmarks
 
-**Output**: `pose_landmarks` object or `None` if no person detected
+**Output**: List of landmark objects with normalized (x, y, z) coordinates or `None`
 
 **Coordinates**: All landmarks are normalized (0.0 - 1.0)
 - `x`: Horizontal position (0 = left, 1 = right)
 - `y`: Vertical position (0 = top, 1 = bottom)
-- `z`: Depth (relative to hip midpoint)
-- `visibility`: Confidence that landmark is visible
+- `z`: Depth relative to face center
 
----
+**2. `calculate_pitch_angle(landmarks, frame_shape)`**
 
-### Posture Analysis: `posture_analyzer.py`
-
-**Purpose**: Analyzes landmark geometry to determine posture quality.
-
-#### Method: `calculate_angle(p1, p2, p3)`
-
-Calculates the angle at point `p2` formed by the three points.
+**Purpose**: Calculates head pitch angle using 3D Perspective-n-Point (PnP) algorithm.
 
 **Mathematical approach**:
-1. Create vectors from p2 to p1 and p2 to p3
-2. Use dot product formula: cos(θ) = (v1 · v2) / (|v1| × |v2|)
-3. Apply arccos to get angle in radians
-4. Convert to degrees
+1. Extract 2D coordinates of 6 key facial landmarks from frame
+2. Use pre-defined 3D face model coordinates (in mm)
+3. Create camera intrinsic matrix (focal length, optical center)
+4. Solve PnP problem to get rotation and translation vectors
+5. Convert rotation vector to rotation matrix
+6. Extract Euler angles (pitch, yaw, roll)
+7. Return pitch angle in degrees
 
-```python
-v1 = [p1.x - p2.x, p1.y - p2.y]
-v2 = [p3.x - p2.x, p3.y - p2.y]
-angle = arccos(dot(v1, v2) / (norm(v1) * norm(v2)))
-```
+**Why PnP?**
+- Estimates 3D head pose from 2D image points
+- More accurate than simple angle calculation
+- Accounts for camera perspective and distance
 
-#### Method: `analyze(landmarks)`
+**3. `calculate_distance(landmarks, frame_shape)`**
+
+**Purpose**: Estimates distance from camera based on face size.
+
+**Approach**:
+1. Calculate distance between eye corners in pixels
+2. Use known average eye distance (~6.3 cm)
+3. Apply similar triangles: `distance = (focal_length × real_size) / pixel_size`
+4. Returns distance in centimeters
+
+**4. `check_posture(landmarks, frame_shape, timestamp_ms)`**
+
+**Main method that combines all measurements:**
 
 **Process**:
-1. Extracts specific landmarks (indices 7, 11, 23)
-   - `LEFT_EAR = 7`
-   - `LEFT_SHOULDER = 11`
-   - `LEFT_HIP = 23`
+1. Calculate current pitch angle
+2. Calculate current distance from camera
+3. If baseline is set (calibrated):
+   - Calculate adjusted pitch (difference from baseline)
+   - Check if outside thresholds
+4. Return comprehensive posture status
 
-2. Calculates neck angle with shoulder as vertex
-
-3. Determines posture quality:
-   - **Good**: 80° ≤ angle ≤ 100°
-   - **Bad**: angle < 80° (leaning forward) or angle > 100° (leaning back)
-
-**Return value**:
-```json
+**Output**:
+```python
 {
-  "is_good": true,
-  "neck_angle": 87.3
+    'is_bad': False,
+    'pitch_angle': -5.2,
+    'adjusted_pitch': -3.1,  # Relative to baseline
+    'distance': 55.3,
+    'reasons': []  # List of threshold violations
 }
 ```
 
-**Why this angle?**
-- When sitting upright, ear-shoulder-hip forms ~90°
-- Slouching/leaning forward reduces this angle
-- The 80-100° range gives some tolerance for natural movement
+---
+
+### Posture Duration Tracking: `posture_analyzer.py`
+
+**Purpose**: Tracks bad posture duration, manages warnings, and maintains statistics.
+
+```python
+class PostureAnalyzer:
+    def __init__(self):
+        self.bad_posture_start = None           # When bad posture began
+        self.bad_posture_duration = 0           # Current bad duration
+        self.warning_sent_at = set()            # Track warning timestamps
+        
+        # Statistics tracking
+        self.total_bad_duration = 0
+        self.longest_bad_streak = 0
+        self.longest_good_streak = 0
+        self.good_posture_start = time.time()
+        
+        # Warning thresholds (configurable)
+        self.initial_warning_seconds = 5        # First warning
+        self.repeat_warning_interval = 20       # Subsequent warnings
+```
+
+#### Key Method: `update(posture_status)`
+
+**Purpose**: Updates analyzer with new posture status and determines if warning is needed.
+
+**Input**: Posture status dict from `PostureDetector.check_posture()`
+
+**Process**:
+
+1. **If bad posture detected**:
+   - If just started: Record start time, update good streak
+   - If continuing: Calculate duration since start
+   - Check if warning threshold reached:
+     - Initial warning at 5 seconds
+     - Repeat warnings every 20 seconds
+   - Track which warnings have been sent to avoid duplicates
+
+2. **If good posture**:
+   - If coming from bad: Update statistics (total bad duration, longest streak)
+   - Reset bad posture tracking
+   - Start tracking good posture duration
+
+**Return value**:
+```python
+{
+    'should_warn': True,              # Should send notification?
+    'bad_duration': 25,               # Seconds of bad posture
+    'pitch': -12.5,                   # Current pitch angle
+    'adjusted_pitch': -10.3,          # Relative to baseline
+    'distance': 45.2,                 # Distance from camera
+    'message': 'Bad posture for 25s'  # Notification message
+}
+```
+
+**Warning Logic**:
+- First warning at 5 seconds of continuous bad posture
+- Then warn every 20 seconds (25s, 45s, 65s, etc.)
+- Resets when posture becomes good
+- Prevents duplicate warnings using `warning_sent_at` set
+
+#### Method: `get_statistics()`
+
+**Returns current session statistics**:
+```python
+{
+    'total_bad_duration': 180,      # Total seconds of bad posture
+    'longest_bad_streak': 45,       # Longest continuous bad period
+    'longest_good_streak': 1200,    # Longest continuous good period
+    'current_bad_duration': 15      # Current streak (if bad)
+}
+```
 
 ---
 
 ### WebSocket Server: `websocket_server.py`
 
-**Purpose**: Provides real-time communication with the .NET client.
+**Purpose**: Provides bidirectional real-time communication with the .NET client.
 
 ```python
 class WebSocketServer:
     def __init__(self, host='localhost', port=8765):
         self.host = host
         self.port = port
-        self.clients = set()  # Track all connected clients
+        self.clients = set()              # Track all connected clients
+        self.on_client_change = None      # Callback for connection events
+        self.detector = None              # Injected PostureDetector
+        self.analyzer = None              # Injected PostureAnalyzer
 ```
 
 #### Key Methods:
 
 **1. `register(websocket)` - async**
 - Adds new client to the set
-- Called when .NET app connects
+- Logs connection count
+- Triggers client change callback
 
 **2. `unregister(websocket)` - async**
 - Removes client from the set
-- Called when connection closes
+- Logs remaining client count
+- Triggers client change callback
 
-**3. `send(data)` - async**
-- Converts Python dict to JSON string
-- Sends to ALL connected clients simultaneously using `asyncio.gather()`
-- Handles exceptions (e.g., if a client disconnected)
-
-**4. `handler(websocket)` - async**
+**3. `handler(websocket)` - async**
 - Manages individual client connection lifecycle
 - Registers client on connect
-- Waits for connection to close
-- Unregisters client on disconnect
+- Listens for incoming messages (frames, commands)
+- Processes each message via `process_message()`
+- Handles disconnection gracefully
 
-**5. `start()` - async**
+**4. `process_message(websocket, message)` - async**
+
+**Handles different message types**:
+
+- **`type: 'frame'`**: 
+  - Receives base64-encoded PNG frame
+  - Decodes to numpy array
+  - Runs face detection and posture analysis
+  - Sends back posture status
+  
+- **`type: 'save_good_posture'`**:
+  - Receives current posture as baseline
+  - Saves to detector for calibration
+  - Confirms success to client
+  
+- **`type: 'get_statistics'`**:
+  - Retrieves statistics from analyzer
+  - Sends back to client
+  
+- **`type: 'reset_statistics'`**:
+  - Resets analyzer statistics
+  - Confirms reset to client
+  
+- **`type: 'set_thresholds'`**:
+  - Updates pitch/distance thresholds
+  - Confirms update to client
+
+**5. `handle_frame(websocket, data)` - async**
+
+**Frame processing pipeline**:
+```python
+1. Extract base64 PNG from message
+2. Decode base64 → bytes
+3. Convert bytes → numpy array → OpenCV BGR image
+4. Generate timestamp (ms since start)
+5. Detect facial landmarks
+6. If face detected:
+   - Check posture (pitch, distance, thresholds)
+   - Update analyzer (duration tracking)
+   - Send result to client
+7. If no face: Send no_face status
+```
+
+**6. `start()` - async**
 - Creates WebSocket server on specified host:port
 - Runs forever waiting for connections
 - Uses `websockets.serve()` context manager
 
 **Protocol**: WebSocket (RFC 6455)
 **Data format**: JSON strings
-**Example message**:
+
+**Example messages**:
+
+**Client → Server (frame)**:
 ```json
-{"is_good": false, "neck_angle": 65.2}
+{
+  "type": "frame",
+  "data": "iVBORw0KGgoAAAANSUhEUg...",  // base64 PNG
+  "width": 640,
+  "height": 480
+}
+```
+
+**Server → Client (posture result)**:
+```json
+{
+  "type": "posture_result",
+  "is_bad": true,
+  "pitch_angle": -12.5,
+  "adjusted_pitch": -10.3,
+  "distance": 45.2,
+  "bad_duration": 8,
+  "should_warn": true,
+  "message": "Head tilted down too much"
+}
 ```
 
 ---
@@ -275,10 +427,15 @@ This sets up the navigation container that can switch between pages.
 
 **Class Fields**:
 ```csharp
-private WebSocketClient? _wsClient;           // Connection to Python service
+private WebSocketClient? _wsClient;              // Connection to Python service
 private NotificationService? _notificationService;  // Manages toast alerts
-private DateTime _badPostureStart;            // When bad posture began
-private bool _inBadPosture = false;           // Current state tracking
+private MediaCapture? _mediaCapture;             // Windows camera API
+private MediaFrameReader? _frameReader;          // Reads frames from camera
+private bool _isMonitoring = false;              // Monitoring state
+private bool _isProcessingFrame = false;         // Prevent concurrent processing
+private Timer? _frameTimer;                      // Controls frame send rate
+private SoftwareBitmap? _latestBitmap;          // Latest camera frame
+private SoftwareBitmapSource? _bitmapSource;    // For UI preview
 ```
 
 **Constructor**:
@@ -288,47 +445,114 @@ public MainPage()
     InitializeComponent();  // Loads XAML UI
     _wsClient = new WebSocketClient();
     _notificationService = new NotificationService();
-    _wsClient.DataReceived += OnPostureDataReceived;  // Subscribe to data events
+    _bitmapSource = new SoftwareBitmapSource();
+    
+    // Subscribe to WebSocket events
+    _wsClient.PostureDataReceived += OnPostureDataReceived;
+    _wsClient.PostureSaved += OnPostureSaved;
+    _wsClient.ThresholdsUpdated += OnThresholdsUpdated;
+    
+    // Bind XAML controls using FindName
+    _statusText = FindName("StatusText") as TextBlock;
+    _cameraPreview = FindName("CameraPreview") as Image;
+    // ... other controls
 }
 ```
 
 **Event Handler: `StartButton_Click`**
-- Attempts to connect to Python WebSocket server
-- Updates UI to show "Monitoring..."
-- Disables the Start button
-- Catches and displays any connection errors
+
+**Startup sequence**:
+1. Initialize `MediaCapture` with default camera
+2. Find best video format (640x480 or 1280x720)
+3. Create `MediaFrameReader` for that format
+4. Set up frame arrival callback
+5. Start frame reader
+6. Connect to Python WebSocket server
+7. Start timer to send frames periodically (~15 FPS)
+8. Update UI to show monitoring state
+
+**Camera initialization**:
+```csharp
+_mediaCapture = new MediaCapture();
+await _mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+{
+    VideoDeviceId = devices[0].Id,
+    StreamingCaptureMode = StreamingCaptureMode.Video
+});
+```
+
+**Frame processing**:
+```csharp
+private async void FrameReader_FrameArrived(sender, args)
+{
+    using var frame = _frameReader.TryAcquireLatestFrame();
+    if (frame?.VideoMediaFrame?.SoftwareBitmap != null)
+    {
+        // Convert to BGRA8 format
+        _latestBitmap = SoftwareBitmap.Convert(
+            frame.VideoMediaFrame.SoftwareBitmap,
+            BitmapPixelFormat.Bgra8
+        );
+        
+        // Update UI preview asynchronously
+        await UpdatePreviewAsync(_latestBitmap);
+    }
+}
+```
 
 **Event Handler: `OnPostureDataReceived`**
 
-This is where the magic happens! Called every ~100ms with new posture data.
+Called when Python service sends posture analysis.
 
 **UI Thread Marshalling**:
 ```csharp
 DispatcherQueue.TryEnqueue(() => { ... });
 ```
-WebSocket data arrives on a background thread, but UI updates MUST happen on the UI thread. `DispatcherQueue` safely queues the update.
 
-**Bad Posture Tracking Logic**:
-```
-IF posture is bad:
-    IF not already tracking bad posture:
-        Start timer (record current time)
-        Mark as "in bad posture"
-    ELSE:
-        Calculate duration
-        IF duration > 30 seconds:
-            Send notification
-ELSE (posture is good):
-    Reset tracking flag
+**Updates UI with**:
+- Posture status (Good ✓ / Bad ✗)
+- Pitch angle display
+- Distance from screen
+- Bad posture duration
+- Progress bar (fills as bad posture continues)
+- Warning messages
+
+**Notification Logic**:
+- Python service determines when to warn
+- .NET app receives `should_warn` flag
+- Shows toast notification if flagged
+- Notification service has its own cooldown
+
+**Event Handler: `SendFrame`**
+
+**Frame sending pipeline**:
+```csharp
+1. Check if latest bitmap is available
+2. Encode bitmap to PNG in memory
+3. Convert PNG bytes to base64 string
+4. Create JSON message with frame data
+5. Send to Python service via WebSocket
+6. Wait for analysis result
 ```
 
-This prevents spamming notifications and only alerts after sustained bad posture.
+**Encoding process**:
+```csharp
+using var stream = new InMemoryRandomAccessStream();
+var encoder = await BitmapEncoder.CreateAsync(
+    BitmapEncoder.PngEncoderId, stream);
+encoder.SetSoftwareBitmap(_latestBitmap);
+await encoder.FlushAsync();
+
+var bytes = new byte[stream.Size];
+await stream.ReadAsync(bytes.AsBuffer(), ...);
+var base64 = Convert.ToBase64String(bytes);
+```
 
 ---
 
 ### WebSocket Client: `WebSocketClient.cs`
 
-**Purpose**: Connects to Python service and receives posture data.
+**Purpose**: Bidirectional WebSocket communication with Python service.
 
 #### Key Components:
 
@@ -345,36 +569,94 @@ public async Task ConnectAsync()
 }
 ```
 
-**2. Receive Loop**
+**2. Send Methods**
+
+**`SendFrameAsync(base64Frame, width, height)`**
+```csharp
+public async Task SendFrameAsync(string base64Frame, int width, int height)
+{
+    var message = new
+    {
+        type = "frame",
+        data = base64Frame,
+        width = width,
+        height = height
+    };
+    
+    var json = JsonSerializer.Serialize(message);
+    var bytes = Encoding.UTF8.GetBytes(json);
+    await _ws.SendAsync(bytes, WebSocketMessageType.Text, true, ...);
+}
+```
+
+**`SaveGoodPostureAsync(pitch, distance)`**
+```csharp
+public async Task SaveGoodPostureAsync(double pitch, double distance)
+{
+    var message = new
+    {
+        type = "save_good_posture",
+        pitch_angle = pitch,
+        distance = distance
+    };
+    await SendMessageAsync(message);
+}
+```
+
+**`SetThresholdsAsync(pitchThreshold, distanceThreshold)`**
+- Sends threshold configuration to Python service
+- Allows runtime adjustment without restart
+
+**3. Receive Loop**
 ```csharp
 private async Task ReceiveLoop()
 {
-    var buffer = new byte[1024];  // 1KB buffer for messages
+    var buffer = new byte[4096];  // Larger buffer for detailed messages
     
     while (_ws.State == WebSocketState.Open)
     {
         var result = await _ws.ReceiveAsync(buffer, CancellationToken.None);
         var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-        var data = JsonSerializer.Deserialize<PostureData>(json);
         
-        DataReceived?.Invoke(this, data);  // Fire event
+        // Parse message and route to appropriate handler
+        var message = JsonSerializer.Deserialize<JsonElement>(json);
+        var type = message.GetProperty("type").GetString();
+        
+        switch (type)
+        {
+            case "posture_result":
+                var data = JsonSerializer.Deserialize<PostureData>(json);
+                PostureDataReceived?.Invoke(this, data);
+                break;
+                
+            case "posture_saved":
+                PostureSaved?.Invoke(this, EventArgs.Empty);
+                break;
+                
+            case "thresholds_updated":
+                ThresholdsUpdated?.Invoke(this, EventArgs.Empty);
+                break;
+        }
     }
 }
 ```
 
 **Flow**:
 1. Wait for WebSocket message (async, non-blocking)
-2. Convert bytes → UTF-8 string → JSON → C# object
-3. Fire `DataReceived` event
-4. Subscribers (MainPage) handle the data
-5. Loop continues until connection closes
+2. Convert bytes → UTF-8 string → JSON
+3. Determine message type
+4. Deserialize and fire appropriate event
+5. Subscribers (MainPage) handle the data
+6. Loop continues until connection closes
 
-**3. Event Pattern**
+**4. Event Pattern**
 ```csharp
-public event EventHandler<PostureData>? DataReceived;
+public event EventHandler<PostureData>? PostureDataReceived;
+public event EventHandler? PostureSaved;
+public event EventHandler? ThresholdsUpdated;
 ```
 
-This allows MainPage to react to new data without polling. It's a **push model**.
+Multiple events allow MainPage to react to different server responses. It's a **push model** with typed events.
 
 ---
 

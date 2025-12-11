@@ -9,18 +9,23 @@ NeatBack is a Windows desktop application that helps you maintain good posture w
 The application is split into two main components that work together:
 
 ### 1. **Python Service** (Backend)
-The Python service is the "brain" that watches your posture. It:
-- Captures video from your webcam
-- Uses Google's MediaPipe AI to detect your body position
-- Analyzes your neck angle to determine if you're sitting correctly
-- Sends posture status updates continuously
+The Python service is the "brain" that analyzes your posture. It:
+- Receives video frames from the .NET app via WebSocket
+- Uses Google's MediaPipe Face Landmarker to detect facial landmarks
+- Calculates head pitch angle using 3D pose estimation (PnP algorithm)
+- Measures distance from camera based on face size
+- Tracks posture statistics and bad posture duration
+- Sends real-time posture analysis back to the client
 
 ### 2. **.NET Desktop App** (Frontend)
-The .NET WinUI3 app is the user interface you interact with. It:
-- Displays your current posture status
-- Shows your neck angle in real-time
-- Sends Windows notifications when you've had bad posture for 30+ seconds
-- Provides a simple "Start Monitoring" button to begin tracking
+The .NET WinUI3 app is the user interface and video source. It:
+- Captures video from your webcam using Windows Media Capture API
+- Sends frames to Python service for analysis
+- Displays live camera preview with posture status overlay
+- Shows pitch angle, distance, and bad posture duration
+- Allows baseline calibration and threshold adjustment
+- Sends Windows notifications based on configurable timing
+- Provides visual progress bar for bad posture duration
 
 ## How They Communicate
 
@@ -30,48 +35,53 @@ The two services talk to each other using **WebSocket** technology, which allows
 ┌─────────────────────┐         WebSocket          ┌──────────────────────┐
 │   Python Service    │ ◄─────────────────────────► │   .NET Desktop App   │
 │                     │                              │                      │
-│ • Camera Capture    │  Sends posture data          │ • User Interface     │
-│ • Pose Detection    │  (JSON over port 8765)       │ • Notifications      │
-│ • Angle Analysis    │                              │ • Status Display     │
+│ • Face Detection    │  Receives video frames       │ • Camera Capture     │
+│ • Pose Analysis     │  Sends posture data          │ • User Interface     │
+│ • Angle Calculation │  (JSON over port 8765)       │ • Notifications      │
 └─────────────────────┘                              └──────────────────────┘
 ```
 
 ## What Makes a "Good" Posture?
 
-The app measures your **neck angle** - the angle formed between your:
-- Ear (top point)
-- Shoulder (middle point)
-- Hip (bottom point)
+The app measures your **head pitch angle** and **distance from screen** using facial landmarks:
+- **Pitch angle**: The forward/backward tilt of your head (negative values = looking down)
+- **Distance**: How far your face is from the camera/screen
 
-**Good posture**: Neck angle between 80-100 degrees
-**Bad posture**: Anything outside that range (usually when you're leaning forward)
+**Good posture**: Determined by calibration - you save your ideal posture as a baseline
+**Bad posture**: When your head pitch or distance deviates beyond configurable thresholds from your baseline
+- Default pitch threshold: -10 degrees (looking down too much)
+- Default distance threshold: 10 cm (too close to screen)
 
 ## User Experience Flow
 
-1. **Start the Python service** - This begins capturing video and analyzing your posture
+1. **Start the Python service** - This starts the WebSocket server waiting for connections
 2. **Launch the .NET app** - This opens the desktop window
-3. **Click "Start Monitoring"** - The app connects to the Python service
-4. **See real-time updates** - Your posture status and neck angle update continuously
-5. **Get notified** - If you slouch for more than 30 seconds, you'll get a Windows toast notification
+3. **Click "Start Monitoring"** - The app connects to the Python service and starts camera
+4. **Calibrate your posture** - Sit correctly and click "Save Good Posture" to set your baseline
+5. **Adjust thresholds** (optional) - Fine-tune pitch and distance sensitivity with sliders
+6. **See real-time updates** - Your posture status, pitch angle, and distance update continuously
+7. **Get notified** - If you have bad posture, you'll get warnings at 5 seconds and then every 20 seconds
 
 ## Technology Stack
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **AI/ML** | MediaPipe | Body pose detection from webcam |
-| **Backend** | Python 3.11 | Processing video and analyzing posture |
-| **Frontend** | .NET 8 + WinUI3 | Windows desktop interface |
-| **Computer Vision** | OpenCV | Capturing and processing video frames |
-| **Communication** | WebSocket | Real-time data exchange |
+| **AI/ML** | MediaPipe Face Landmarker | Facial landmark detection for head pose |
+| **Backend** | Python 3.11 | Processing frames and analyzing posture |
+| **Frontend** | .NET 8 + WinUI3 | Windows desktop interface with camera |
+| **Computer Vision** | OpenCV | Frame processing and PnP algorithm |
+| **Communication** | WebSocket | Real-time bidirectional data exchange |
 | **Notifications** | Windows Toast | System notifications |
 
 ## Key Features
 
-✅ **Real-time monitoring** - Analyzes your posture 10 times per second
-✅ **Non-intrusive** - Runs quietly in the background
-✅ **Smart notifications** - Only alerts you after 30 seconds of bad posture
-✅ **Notification cooldown** - Won't spam you (30 second minimum between alerts)
-✅ **Simple interface** - Clean, minimal UI showing only what you need
+✅ **Real-time monitoring** - Analyzes your posture continuously as frames are sent
+✅ **Personalized calibration** - Save your ideal posture as a baseline reference
+✅ **Adjustable thresholds** - Customize pitch angle and distance sensitivity
+✅ **Smart notifications** - Initial alert at 5 seconds, then every 20 seconds of bad posture
+✅ **Visual feedback** - Progress bar shows bad posture duration
+✅ **Statistics tracking** - Monitor your posture streaks and total durations
+✅ **Live camera preview** - See yourself with real-time landmark overlay
 
 ## System Requirements
 
@@ -91,16 +101,17 @@ The app measures your **neck angle** - the angle formed between your:
 
 - Only monitors when you actively click "Start Monitoring"
 - Requires both services to be running (Python + .NET)
-- Works best with good lighting
-- Currently monitors left side only (uses left ear, shoulder, hip)
-- No historical data or posture tracking over time
+- Works best with good lighting and clear face visibility
+- Requires initial calibration for accurate baseline
+- Statistics reset when application closes
 
 ## Potential Future Enhancements
 
-- 📊 Daily/weekly posture reports
-- ⏰ Customizable alert thresholds
-- 🎯 Different posture profiles (sitting vs standing desk)
+- � Persistent statistics storage (save/load posture history)
+- 📊 Daily/weekly posture reports and charts
+- 🎯 Multiple posture profiles (sitting vs standing desk)
 - 📱 System tray icon for background monitoring
-- 🔔 Customizable notification messages
-- 💾 Posture history and analytics
+- 🔔 Customizable notification sounds and messages
+- 📈 Export posture data for analysis
 - ⚙️ Auto-start with Windows
+- 🎥 Record posture violation clips
