@@ -1,9 +1,15 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using NeatBack.Models;
 using NeatBack.Services;
 using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Windows.Graphics.Imaging;
+using Windows.Media.Capture;
+using Windows.Media.Capture.Frames;
 
 namespace NeatBack.Views;
 
@@ -12,6 +18,10 @@ public sealed partial class MainPage : Page
     private WebSocketClient? _wsClient;
     private NotificationService? _notificationService;
     private bool _isMonitoring = false;
+    private MediaCapture? _mediaCapture;
+    private MediaFrameReader? _frameReader;
+    private Image? _cameraPreview;
+    private CancellationTokenSource? _previewCts;
     // Local references bound via FindName to avoid reliance on generated fields
     private TextBlock? _statusText;
     private ProgressBar? _badPostureProgress;
@@ -31,6 +41,7 @@ public sealed partial class MainPage : Page
         _wsClient = new WebSocketClient();
         _notificationService = new NotificationService();
         // Bind local references to XAML controls
+        _cameraPreview = FindName("CameraPreview") as Image;
         _statusText = FindName("StatusText") as TextBlock;
         _badPostureProgress = FindName("BadPostureProgress") as ProgressBar;
         _pitchText = FindName("PitchText") as TextBlock;
@@ -55,6 +66,10 @@ public sealed partial class MainPage : Page
         {
             if (!_isMonitoring)
             {
+                // Start camera preview first
+                if (_statusText != null) _statusText.Text = "Starting camera...";
+                await StartCameraAsync();
+                
                 // Connect to WebSocket and start monitoring
                 if (_statusText != null) _statusText.Text = "Connecting to service...";
                 
@@ -91,6 +106,9 @@ public sealed partial class MainPage : Page
             await _wsClient.StopMonitoringAsync();
             await _wsClient.DisconnectAsync();
         }
+        
+        // Stop camera
+        StopCamera();
         
         if (_startButton != null) _startButton.Content = "Start Monitoring";
         if (_savePostureButton != null) _savePostureButton.IsEnabled = false;
@@ -205,6 +223,120 @@ public sealed partial class MainPage : Page
         if (_wsClient != null)
         {
             await _wsClient.SetThresholdsAsync(pitchThreshold, distanceThreshold);
+        }
+    }
+    
+    private async Task StartCameraAsync()
+    {
+        try
+        {
+            if (_mediaCapture != null)
+            {
+                StopCamera();
+            }
+            
+            _mediaCapture = new MediaCapture();
+            
+            var settings = new MediaCaptureInitializationSettings
+            {
+                StreamingCaptureMode = StreamingCaptureMode.Video
+            };
+            
+            await _mediaCapture.InitializeAsync(settings);
+            
+            // Find color video preview frame source
+            var frameSource = _mediaCapture.FrameSources.FirstOrDefault(source =>
+                source.Value.Info.MediaStreamType == MediaStreamType.VideoPreview &&
+                source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
+            
+            if (frameSource == null)
+            {
+                // Fallback to any color video source
+                frameSource = _mediaCapture.FrameSources.FirstOrDefault(source =>
+                    source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
+            }
+            
+            if (frameSource != null)
+            {
+                _frameReader = await _mediaCapture.CreateFrameReaderAsync(frameSource);
+                _frameReader.FrameArrived += OnFrameArrived;
+                await _frameReader.StartAsync();
+            }
+            
+            System.Diagnostics.Debug.WriteLine("Camera started successfully");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (_statusText != null)
+                _statusText.Text = "Camera access denied. Please enable camera permissions.";
+            System.Diagnostics.Debug.WriteLine("Camera access denied");
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"Failed to start camera: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Error starting camera: {ex}");
+        }
+    }
+    
+    private void OnFrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
+    {
+        var frame = sender.TryAcquireLatestFrame();
+        if (frame?.VideoMediaFrame != null)
+        {
+            var softwareBitmap = frame.VideoMediaFrame.SoftwareBitmap;
+            if (softwareBitmap != null)
+            {
+                if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
+                    softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
+                {
+                    softwareBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+                }
+                
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    if (_cameraPreview != null)
+                    {
+                        var bitmap = new SoftwareBitmapSource();
+                        await bitmap.SetBitmapAsync(softwareBitmap);
+                        _cameraPreview.Source = bitmap;
+                    }
+                    softwareBitmap?.Dispose();
+                });
+            }
+        }
+        frame?.Dispose();
+    }
+    
+    private void StopCamera()
+    {
+        try
+        {
+            _previewCts?.Cancel();
+            
+            if (_frameReader != null)
+            {
+                _frameReader.FrameArrived -= OnFrameArrived;
+                _frameReader.Dispose();
+                _frameReader = null;
+            }
+            
+            if (_mediaCapture != null)
+            {
+                _mediaCapture.Dispose();
+                _mediaCapture = null;
+            }
+            
+            if (_cameraPreview != null)
+            {
+                _cameraPreview.Source = null;
+            }
+            
+            System.Diagnostics.Debug.WriteLine("Camera stopped");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error stopping camera: {ex}");
         }
     }
 }
