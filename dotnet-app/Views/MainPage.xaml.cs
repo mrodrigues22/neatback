@@ -82,7 +82,11 @@ public sealed partial class MainPage : Page
                 await _wsClient!.StartMonitoringAsync();
                 
                 _isMonitoring = true;
-                if (_startButton != null) _startButton.Content = "Stop Monitoring";
+                if (_startButton != null)
+                {
+                    _startButton.Content = "⏹ Stop Monitoring";
+                    _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
+                }
                 if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
                 if (_statusText != null) _statusText.Text = "Monitoring started. Please save your good posture!";
                 
@@ -118,7 +122,11 @@ public sealed partial class MainPage : Page
             _cameraPreview.Source = null;
         }
         
-        if (_startButton != null) _startButton.Content = "Start Monitoring";
+        if (_startButton != null)
+        {
+            _startButton.Content = "▶ Start Monitoring";
+            _startButton.ClearValue(Button.ForegroundProperty);
+        }
         if (_savePostureButton != null) _savePostureButton.IsEnabled = false;
         if (_statusText != null) _statusText.Text = "Monitoring stopped";
         if (_pitchText != null) _pitchText.Text = "--°";
