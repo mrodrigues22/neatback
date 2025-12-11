@@ -173,6 +173,10 @@ class WebSocketServer:
                 # Update analyzer
                 analysis = self.analyzer.update(posture_status)
                 
+                # Encode frame to JPEG for sending to client
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                frame_base64 = base64.b64encode(buffer).decode('utf-8')
+                
                 # Send results to all clients
                 await self.send({
                     'type': 'posture_result',
@@ -184,7 +188,8 @@ class WebSocketServer:
                         'bad_duration': analysis['bad_duration'],
                         'should_warn': analysis['should_warn'],
                         'message': analysis['message'],
-                        'error': posture_status.get('error')
+                        'error': posture_status.get('error'),
+                        'frame': frame_base64
                     }
                 })
                 

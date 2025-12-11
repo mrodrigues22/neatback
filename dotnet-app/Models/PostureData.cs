@@ -27,4 +27,7 @@ public class PostureData
     
     [JsonPropertyName("error")]
     public string? Error { get; set; }
+    
+    [JsonPropertyName("frame")]
+    public string? Frame { get; set; }
 }
