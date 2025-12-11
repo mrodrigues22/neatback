@@ -23,7 +23,6 @@ class PostureService:
         print("NeatBack Posture Analysis Service")
         print("="*60)
         print("Starting WebSocket server...")
-        print("The service will process frames sent from the WinUI client.")
         print("\nWaiting for client connection...")
         print("="*60)
         

@@ -1,5 +1,7 @@
 # Posture Analysis Implementation Guide
 
+> **Note**: This guide describes the original implementation plan. The actual implementation differs in that the Python service now captures frames directly from the webcam using OpenCV, rather than receiving frames from the .NET UI. See the actual code in [python-service/src/websocket_server.py](python-service/src/websocket_server.py) for the current implementation.
+
 ## Overview
 This guide explains how to implement a new posture analysis logic into NeatBack application. The extension uses MediaPipe Face Landmarker and OpenCV to detect slouching in real-time.
 

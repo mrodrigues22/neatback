@@ -70,7 +70,7 @@ You should see:
 NeatBack Posture Analysis Service
 ============================================================
 Starting WebSocket server...
-The service will process frames sent from the WinUI client.
+The service will capture frames directly from your webcam.
 
 Waiting for client connection...
 ============================================================

@@ -1,5 +1,7 @@
 # NeatBack - Posture Tracking App MVP Implementation Plan
 
+> **Note**: This document describes an early implementation plan using body pose detection. The actual implementation uses **MediaPipe Face Landmarker** for more accurate sitting posture detection, and the Python service captures frames directly from the webcam rather than receiving them from the .NET app. See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for the current implementation.
+
 ## Project Overview
 A simple Windows desktop application that:
 - Tracks your posture using webcam and AI

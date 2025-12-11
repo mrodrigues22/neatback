@@ -91,13 +91,14 @@ dotnet run
 ## How It Works
 
 1. **Python Service**: 
-   - Captures video from your webcam
-   - Uses MediaPipe to detect body pose landmarks
-   - Analyzes neck angle (ear-shoulder-hip alignment)
-   - Sends posture data via WebSocket
+   - Captures video directly from your webcam using OpenCV
+   - Uses MediaPipe to detect facial landmarks (478 points)
+   - Analyzes head pitch angle and distance from camera
+   - Sends posture analysis results via WebSocket
 
 2. **.NET Desktop App**:
    - Connects to the Python service via WebSocket
+   - Receives and displays posture analysis results
    - Displays real-time posture status
    - Shows your current neck angle
    - Sends notifications if you maintain bad posture for 30+ seconds

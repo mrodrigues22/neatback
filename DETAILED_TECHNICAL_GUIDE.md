@@ -10,17 +10,17 @@ NeatBack uses a **client-server architecture** with asynchronous communication:
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
 │  ┌──────────────┐    ┌─────────────────┐    ┌──────────────────┐       │
-│  │ MediaCapture │───►│  FrameReader    │───►│ WebSocketClient  │       │
-│  │  (Camera)    │    │  (Process)      │    │  (Send Frames)   │       │
+│  │ WebSocket    │───►│  PostureData    │───►│  MainPage UI     │       │
+│  │  Client      │    │  (Model)        │    │  (Display)       │       │
 │  └──────────────┘    └─────────────────┘    └──────────────────┘       │
 │         │                     │                        │                 │
 │         └─────────────────────┴────────────────────────┘                │
-│                              │ Video Frames (base64 PNG)                │
+│                              ▲ Posture Results & Frame Previews          │
 │  ┌──────────────┐    ┌───────┴────────┐    ┌──────────────────┐       │
-│  │   MainPage   │◄───┤  PostureData   │◄───┤ NotificationSvc  │       │
-│  │   (UI)       │    │   (Model)      │    │  (Alerts)        │       │
+│  │   Controls   │───►│  WebSocket     │───►│ NotificationSvc  │       │
+│  │   (Buttons)  │    │   Messages     │    │  (Alerts)        │       │
 │  └──────────────┘    └────────────────┘    └──────────────────┘       │
-│                              ▲ Posture Analysis Results                 │
+│                              │ Control Messages (JSON)                  │
 └──────────────────────────────┼───────────────────────────────────────────┘
                                │ WebSocket (JSON)
                                │ ws://localhost:8765
@@ -32,8 +32,9 @@ NeatBack uses a **client-server architecture** with asynchronous communication:
 │                    └──────────────────┘                                 │
 │                              │                                           │
 │  ┌──────────────┐    ┌───────┴────────┐    ┌───────────────────┐     │
-│  │   OpenCV     │◄───┤ PostureDetector│◄───┤ PostureAnalyzer   │     │
-│  │  (Decode)    │    │  (MediaPipe)   │    │ (Pitch/Distance)  │     │
+│  │ OpenCV       │───►│PostureDetector │───►│ PostureAnalyzer   │     │
+│  │ (Camera      │    │ (MediaPipe     │    │ (Pitch/Distance   │     │
+│  │  Capture)    │    │  Face Detect)  │    │  Analysis)        │     │
 │  └──────────────┘    └────────────────┘    └───────────────────┘     │
 │                                                                           │
 │                           PYTHON SERVICE (Server)                        │
@@ -73,8 +74,8 @@ class PostureService:
 
 **Flow**:
 ```
-.NET Client → Frame (base64 PNG) → WebSocket → Decode → Face Detection → 
-Pitch/Distance Calc → Posture Analysis → Result → WebSocket → .NET Client
+OpenCV Camera → Capture Frame → Face Detection → Pitch/Distance Calc → 
+Posture Analysis → Result + Frame → WebSocket → .NET Client Display
 ```
 
 ---

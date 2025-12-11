@@ -22,9 +22,10 @@ The advanced posture analysis system based on the POSTURE_ANALYSIS_IMPLEMENTATIO
    - Good/bad posture state management
 
 3. **websocket_server.py** - WebSocketServer Class
-   - Frame processing from client
-   - Message handling (frame, save_good_posture, set_thresholds, get_statistics)
-   - Base64 image decoding
+   - Camera capture using OpenCV (cv2.VideoCapture)
+   - Monitoring loop for continuous frame analysis
+   - Message handling (start/stop monitoring, save_good_posture, set_thresholds, get_statistics)
+   - Base64 frame encoding for preview transmission
    - Real-time bidirectional communication
 
 4. **main.py** - Service Entry Point
@@ -40,11 +41,10 @@ The advanced posture analysis system based on the POSTURE_ANALYSIS_IMPLEMENTATIO
    - Error handling fields
 
 2. **WebSocketClient.cs** - Communication Layer
-   - Frame capture and base64 encoding
    - Async WebSocket communication
    - Event-driven architecture (PostureDataReceived, PostureSaved, ThresholdsUpdated)
-   - Message type handling
-   - Image compression (640x480 JPEG)
+   - Message type handling for control commands
+   - Receives posture data and frame previews from Python service
 
 3. **MainPage.xaml** - User Interface
    - Modern, card-based UI design
@@ -55,11 +55,10 @@ The advanced posture analysis system based on the POSTURE_ANALYSIS_IMPLEMENTATIO
    - Instructions and status feedback
 
 4. **MainPage.xaml.cs** - UI Logic
-   - MediaCapture integration for camera access
-   - MediaFrameReader for efficient frame capture
-   - Timer-based frame sending (1 fps)
-   - Event handlers for all user interactions
-   - Notification triggers
+   - Display of posture analysis results
+   - Frame preview display from Python service
+   - Event handlers for all user interactions (start/stop monitoring, calibration)
+   - Notification triggers based on bad posture warnings
    - Resource cleanup and lifecycle management
 
 ### Supporting Files

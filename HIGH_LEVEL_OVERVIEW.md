@@ -10,17 +10,17 @@ The application is split into two main components that work together:
 
 ### 1. **Python Service** (Backend)
 The Python service is the "brain" that analyzes your posture. It:
-- Receives video frames from the .NET app via WebSocket
+- Captures video frames directly from your webcam using OpenCV
 - Uses Google's MediaPipe Face Landmarker to detect facial landmarks
 - Calculates head pitch angle using 3D pose estimation (PnP algorithm)
 - Measures distance from camera based on face size
 - Tracks posture statistics and bad posture duration
-- Sends real-time posture analysis back to the client
+- Sends real-time posture analysis and frame previews to the client
 
 ### 2. **.NET Desktop App** (Frontend)
-The .NET WinUI3 app is the user interface and video source. It:
-- Captures video from your webcam using Windows Media Capture API
-- Sends frames to Python service for analysis
+The .NET WinUI3 app is the user interface. It:
+- Connects to the Python service via WebSocket
+- Receives posture analysis results and frame previews from Python service
 - Displays live camera preview with posture status overlay
 - Shows pitch angle, distance, and bad posture duration
 - Allows baseline calibration and threshold adjustment
@@ -35,9 +35,10 @@ The two services talk to each other using **WebSocket** technology, which allows
 ┌─────────────────────┐         WebSocket          ┌──────────────────────┐
 │   Python Service    │ ◄─────────────────────────► │   .NET Desktop App   │
 │                     │                              │                      │
-│ • Face Detection    │  Receives video frames       │ • Camera Capture     │
-│ • Pose Analysis     │  Sends posture data          │ • User Interface     │
-│ • Angle Calculation │  (JSON over port 8765)       │ • Notifications      │
+│ • Camera Capture    │  Sends posture data          │ • User Interface     │
+│ • Face Detection    │  & frame previews            │ • Display Results    │
+│ • Pose Analysis     │  (JSON over port 8765)       │ • Notifications      │
+│ • Angle Calculation │                              │ • User Controls      │
 └─────────────────────┘                              └──────────────────────┘
 ```
 

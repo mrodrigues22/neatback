@@ -24,17 +24,18 @@ NeatBack uses advanced computer vision to monitor your posture by tracking facia
 │   WinUI Desktop App │
 │  (C# / .NET 8.0)    │
 │                     │
-│  - Camera Capture   │
 │  - UI & Controls    │
+│  - Display Results  │
 │  - Notifications    │
 └──────────┬──────────┘
            │ WebSocket
-           │ (sends frames as base64 JPEG)
-           ▼
-┌─────────────────────┐
+           │ (receives posture data & frame previews)
+           ▲
+┌──────────┴──────────┐
 │   Python Service    │
 │  (MediaPipe + CV)   │
 │                     │
+│  - Camera Capture   │
 │  - Face Detection   │
 │  - Pose Estimation  │
 │  - Posture Analysis │
@@ -145,7 +146,7 @@ Or open `NeatBack.slnx` in Visual Studio and press F5.
 
 ## 📖 Usage Guide
 
-1. **Start Monitoring**: Click "Start Monitoring" to begin camera capture
+1. **Start Monitoring**: Click "Start Monitoring" to begin camera capture (Python service starts capturing)
 2. **Position Yourself**: Sit in your best posture with face clearly visible
 3. **Save Baseline**: Click "Save Good Posture" to set your reference posture
 4. **Get Monitored**: The app will now track your posture continuously
@@ -174,8 +175,8 @@ Use the sliders to customize detection thresholds:
 
 ### .NET Application
 - **WinUI 3**: Modern Windows UI framework
-- **Windows.Media.Capture**: Camera access and frame capture
-- **System.Net.WebSockets**: WebSocket client
+- **System.Net.WebSockets**: WebSocket client for receiving posture data
+- **Windows.UI.Notifications**: Desktop notification system
 
 ## 📁 Project Structure
 
