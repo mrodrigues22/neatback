@@ -2,8 +2,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using NeatBack.Models;
-using Windows.Graphics.Imaging;
-using Windows.Storage.Streams;
 
 namespace NeatBack.Services;
 
@@ -98,6 +96,14 @@ public class WebSocketClient
                     ThresholdsUpdated?.Invoke(this, message.success);
                     break;
                 
+                case "monitoring_started":
+                    System.Diagnostics.Debug.WriteLine("Monitoring started on backend");
+                    break;
+                
+                case "monitoring_stopped":
+                    System.Diagnostics.Debug.WriteLine("Monitoring stopped on backend");
+                    break;
+                
                 case "error":
                     System.Diagnostics.Debug.WriteLine($"Server error: {message.message}");
                     break;
@@ -109,20 +115,12 @@ public class WebSocketClient
         }
     }
     
-    public async Task SendFrameAsync(SoftwareBitmap bitmap)
+    public async Task StartMonitoringAsync()
     {
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var base64 = await ConvertBitmapToBase64(bitmap);
-        
-        var message = JsonSerializer.Serialize(new
-        {
-            type = "frame",
-            frame = base64,
-            timestamp_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        });
-        
+        var message = JsonSerializer.Serialize(new { type = "start_monitoring" });
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),
@@ -132,20 +130,27 @@ public class WebSocketClient
         );
     }
     
-    public async Task SaveGoodPostureAsync(SoftwareBitmap bitmap)
+    public async Task StopMonitoringAsync()
     {
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var base64 = await ConvertBitmapToBase64(bitmap);
+        var message = JsonSerializer.Serialize(new { type = "stop_monitoring" });
+        var bytes = Encoding.UTF8.GetBytes(message);
+        await _ws.SendAsync(
+            new ArraySegment<byte>(bytes),
+            WebSocketMessageType.Text,
+            true,
+            CancellationToken.None
+        );
+    }
+    
+    public async Task SaveGoodPostureAsync()
+    {
+        if (_ws?.State != WebSocketState.Open)
+            return;
         
-        var message = JsonSerializer.Serialize(new
-        {
-            type = "save_good_posture",
-            frame = base64,
-            timestamp_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        });
-        
+        var message = JsonSerializer.Serialize(new { type = "save_good_posture" });
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),
@@ -191,28 +196,7 @@ public class WebSocketClient
         );
     }
     
-    private async Task<string> ConvertBitmapToBase64(SoftwareBitmap bitmap)
-    {
-        using var stream = new InMemoryRandomAccessStream();
-        
-        var encoder = await BitmapEncoder.CreateAsync(
-            BitmapEncoder.JpegEncoderId,
-            stream
-        );
-        
-        encoder.SetSoftwareBitmap(bitmap);
-        encoder.BitmapTransform.ScaledWidth = 640;  // Resize for efficiency
-        encoder.BitmapTransform.ScaledHeight = 480;
-        
-        await encoder.FlushAsync();
-        
-        var bytes = new byte[stream.Size];
-        var reader = new DataReader(stream.GetInputStreamAt(0));
-        await reader.LoadAsync((uint)stream.Size);
-        reader.ReadBytes(bytes);
-        
-        return Convert.ToBase64String(bytes);
-    }
+
     
     public async Task DisconnectAsync()
     {

@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import os
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 
@@ -12,9 +13,13 @@ class PostureDetector:
         self.FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
         self.VisionRunningMode = mp.tasks.vision.RunningMode
         
+        # Get the path to the model file (in the same directory as this script)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(script_dir, 'face_landmarker.task')
+        
         # Configure face landmarker
         options = self.FaceLandmarkerOptions(
-            base_options=self.BaseOptions(model_asset_path='face_landmarker.task'),
+            base_options=self.BaseOptions(model_asset_path=model_path),
             running_mode=self.VisionRunningMode.VIDEO,
             num_faces=1,
             min_face_detection_confidence=0.5,

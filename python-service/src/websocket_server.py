@@ -4,6 +4,7 @@ import json
 import cv2
 import base64
 import numpy as np
+import time
 
 class WebSocketServer:
     def __init__(self, host='localhost', port=8765):
@@ -13,6 +14,9 @@ class WebSocketServer:
         self.on_client_change = None  # Callback for when clients connect/disconnect
         self.detector = None  # Will be set externally
         self.analyzer = None  # Will be set externally
+        self.camera = None
+        self.is_monitoring = False
+        self.monitoring_task = None
         
     async def register(self, websocket):
         self.clients.add(websocket)
@@ -52,13 +56,17 @@ class WebSocketServer:
             data = json.loads(message)
             msg_type = data.get('type')
             
-            if msg_type == 'frame':
-                # Process video frame
-                await self.handle_frame(websocket, data)
+            if msg_type == 'start_monitoring':
+                # Start camera and monitoring
+                await self.start_monitoring()
+            
+            elif msg_type == 'stop_monitoring':
+                # Stop monitoring
+                await self.stop_monitoring()
             
             elif msg_type == 'save_good_posture':
-                # Save baseline posture
-                await self.handle_save_posture(websocket, data)
+                # Save baseline posture with current frame
+                await self.handle_save_current_posture(websocket)
             
             elif msg_type == 'get_statistics':
                 # Return statistics
@@ -95,53 +103,105 @@ class WebSocketServer:
                 'message': str(e)
             }))
     
-    async def handle_frame(self, websocket, data):
-        """Process video frame and return posture analysis."""
-        if not self.detector or not self.analyzer:
-            await websocket.send(json.dumps({
-                'type': 'error',
-                'message': 'Detector or analyzer not initialized'
-            }))
+    async def start_monitoring(self):
+        """Start camera and monitoring loop."""
+        if self.is_monitoring:
             return
         
-        try:
-            # Decode base64 image
-            img_data = base64.b64decode(data['frame'])
-            nparr = np.frombuffer(img_data, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            # Get timestamp (or use current time)
-            timestamp_ms = data.get('timestamp_ms', int(cv2.getTickCount() / cv2.getTickFrequency() * 1000))
-            
-            # Analyze posture
-            posture_status = self.detector.check_posture(frame, timestamp_ms)
-            
-            # Update analyzer
-            analysis = self.analyzer.update(posture_status)
-            
-            # Send response
-            await websocket.send(json.dumps({
-                'type': 'posture_result',
-                'data': {
-                    'is_bad': posture_status['is_bad'],
-                    'pitch_angle': posture_status['pitch_angle'],
-                    'adjusted_pitch': posture_status['adjusted_pitch'],
-                    'distance': posture_status['distance'],
-                    'bad_duration': analysis['bad_duration'],
-                    'should_warn': analysis['should_warn'],
-                    'message': analysis['message'],
-                    'error': posture_status.get('error')
-                }
-            }))
-        except Exception as e:
-            print(f"Error handling frame: {e}")
-            await websocket.send(json.dumps({
+        print("Starting camera...")
+        self.camera = cv2.VideoCapture(0)
+        
+        if not self.camera.isOpened():
+            await self.send({
                 'type': 'error',
-                'message': f'Frame processing error: {str(e)}'
-            }))
+                'message': 'Failed to open camera'
+            })
+            return
+        
+        self.is_monitoring = True
+        self.monitoring_task = asyncio.create_task(self.monitoring_loop())
+        
+        await self.send({
+            'type': 'monitoring_started',
+            'success': True
+        })
+        print("Monitoring started")
     
-    async def handle_save_posture(self, websocket, data):
-        """Save good posture baseline."""
+    async def stop_monitoring(self):
+        """Stop camera and monitoring loop."""
+        if not self.is_monitoring:
+            return
+        
+        self.is_monitoring = False
+        
+        if self.monitoring_task:
+            self.monitoring_task.cancel()
+            try:
+                await self.monitoring_task
+            except asyncio.CancelledError:
+                pass
+        
+        if self.camera:
+            self.camera.release()
+            self.camera = None
+        
+        await self.send({
+            'type': 'monitoring_stopped',
+            'success': True
+        })
+        print("Monitoring stopped")
+    
+    async def monitoring_loop(self):
+        """Continuously capture and analyze frames."""
+        try:
+            while self.is_monitoring:
+                if not self.camera or not self.camera.isOpened():
+                    break
+                
+                ret, frame = self.camera.read()
+                if not ret:
+                    print("Failed to read frame")
+                    await asyncio.sleep(0.1)
+                    continue
+                
+                # Get timestamp
+                timestamp_ms = int(time.time() * 1000)
+                
+                # Analyze posture
+                posture_status = self.detector.check_posture(frame, timestamp_ms)
+                
+                # Update analyzer
+                analysis = self.analyzer.update(posture_status)
+                
+                # Send results to all clients
+                await self.send({
+                    'type': 'posture_result',
+                    'data': {
+                        'is_bad': posture_status['is_bad'],
+                        'pitch_angle': posture_status['pitch_angle'],
+                        'adjusted_pitch': posture_status['adjusted_pitch'],
+                        'distance': posture_status['distance'],
+                        'bad_duration': analysis['bad_duration'],
+                        'should_warn': analysis['should_warn'],
+                        'message': analysis['message'],
+                        'error': posture_status.get('error')
+                    }
+                })
+                
+                # Process at ~1 FPS
+                await asyncio.sleep(1.0)
+        
+        except asyncio.CancelledError:
+            print("Monitoring loop cancelled")
+        except Exception as e:
+            print(f"Error in monitoring loop: {e}")
+            await self.send({
+                'type': 'error',
+                'message': f'Monitoring error: {str(e)}'
+            })
+    
+    async def handle_save_current_posture(self, websocket):
+        """Save good posture baseline from current camera frame."""
         if not self.detector:
             await websocket.send(json.dumps({
                 'type': 'error',
@@ -149,14 +209,25 @@ class WebSocketServer:
             }))
             return
         
+        if not self.camera or not self.camera.isOpened():
+            await websocket.send(json.dumps({
+                'type': 'error',
+                'message': 'Camera not active'
+            }))
+            return
+        
         try:
-            # Decode image
-            img_data = base64.b64decode(data['frame'])
-            nparr = np.frombuffer(img_data, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # Capture current frame
+            ret, frame = self.camera.read()
+            if not ret:
+                await websocket.send(json.dumps({
+                    'type': 'error',
+                    'message': 'Failed to capture frame'
+                }))
+                return
             
             # Get timestamp
-            timestamp_ms = data.get('timestamp_ms', int(cv2.getTickCount() / cv2.getTickFrequency() * 1000))
+            timestamp_ms = int(time.time() * 1000)
             
             # Save baseline
             success = self.detector.save_good_posture(frame, timestamp_ms)

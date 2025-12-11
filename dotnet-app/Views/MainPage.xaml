@@ -10,13 +10,7 @@
     <Page.Content>
         <ScrollViewer>
             <Grid Padding="20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                
                 <StackPanel
-                    Grid.Column="0"
                     Spacing="20"
                     MaxWidth="500">
                     
@@ -181,34 +175,6 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-                
-                <!-- Camera Preview -->
-                <Border
-                    Grid.Column="1"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="2"
-                    CornerRadius="8"
-                    Margin="20,0,0,0"
-                    VerticalAlignment="Top"
-                    Background="{ThemeResource LayerFillColorDefaultBrush}">
-                    <StackPanel>
-                        <TextBlock
-                            Text="Camera View"
-                            FontSize="16"
-                            FontWeight="SemiBold"
-                            Margin="15,15,15,10" />
-                        
-                        <Border
-                            Width="480"
-                            Height="360"
-                            Margin="15,0,15,15"
-                            Background="#FF202020">
-                            <Image
-                                x:Name="CameraPreview"
-                                Stretch="Uniform" />
-                        </Border>
-                    </StackPanel>
-                </Border>
             </Grid>
         </ScrollViewer>
     </Page.Content>
