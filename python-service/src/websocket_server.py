@@ -111,6 +111,12 @@ class WebSocketServer:
         print("Starting camera...")
         self.camera = cv2.VideoCapture(0)
         
+        # Set camera properties for better performance
+        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.camera.set(cv2.CAP_PROP_FPS, 30)
+        self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer to get latest frames
+        
         if not self.camera.isOpened():
             await self.send({
                 'type': 'error',
@@ -173,8 +179,11 @@ class WebSocketServer:
                 # Update analyzer
                 analysis = self.analyzer.update(posture_status)
                 
-                # Encode frame to JPEG for sending to client
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                # Resize frame for preview (reduces data transfer significantly)
+                preview_frame = cv2.resize(frame, (640, 360))
+                
+                # Encode frame to JPEG with lower quality for preview
+                _, buffer = cv2.imencode('.jpg', preview_frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
                 frame_base64 = base64.b64encode(buffer).decode('utf-8')
                 
                 # Send results to all clients
@@ -193,8 +202,8 @@ class WebSocketServer:
                     }
                 })
                 
-                # Process at ~1 FPS
-                await asyncio.sleep(1.0)
+                # Process at ~10 FPS for smoother preview
+                await asyncio.sleep(0.1)
         
         except asyncio.CancelledError:
             print("Monitoring loop cancelled")
