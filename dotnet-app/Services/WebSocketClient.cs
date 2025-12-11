@@ -160,7 +160,7 @@ public class WebSocketClient
         );
     }
     
-    public async Task SetThresholdsAsync(double pitchThreshold, double distanceThreshold)
+    public async Task SetThresholdsAsync(double pitchThreshold, double distanceThreshold, double headRollThreshold = 15, double shoulderTiltThreshold = 10)
     {
         if (_ws?.State != WebSocketState.Open)
             return;
@@ -169,7 +169,9 @@ public class WebSocketClient
         {
             type = "set_thresholds",
             pitch_threshold = pitchThreshold,
-            distance_threshold = distanceThreshold
+            distance_threshold = distanceThreshold,
+            head_roll_threshold = headRollThreshold,
+            shoulder_tilt_threshold = shoulderTiltThreshold
         });
         
         var bytes = Encoding.UTF8.GetBytes(message);

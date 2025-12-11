@@ -91,6 +91,8 @@ class WebSocketServer:
                 if self.detector:
                     self.detector.pitch_threshold = data.get('pitch_threshold', -10)
                     self.detector.distance_threshold = data.get('distance_threshold', 10)
+                    self.detector.head_roll_threshold = data.get('head_roll_threshold', 15)
+                    self.detector.shoulder_tilt_threshold = data.get('shoulder_tilt_threshold', 10)
                     await websocket.send(json.dumps({
                         'type': 'thresholds_updated',
                         'success': True
@@ -192,11 +194,16 @@ class WebSocketServer:
                     'data': {
                         'is_bad': posture_status['is_bad'],
                         'pitch_angle': posture_status['pitch_angle'],
+                        'roll_angle': posture_status['roll_angle'],
+                        'shoulder_tilt': posture_status['shoulder_tilt'],
                         'adjusted_pitch': posture_status['adjusted_pitch'],
+                        'adjusted_roll': posture_status['adjusted_roll'],
+                        'adjusted_shoulder_tilt': posture_status['adjusted_shoulder_tilt'],
                         'distance': posture_status['distance'],
                         'bad_duration': analysis['bad_duration'],
                         'should_warn': analysis['should_warn'],
                         'message': analysis['message'],
+                        'posture_issues': posture_status['posture_issues'],
                         'error': posture_status.get('error'),
                         'frame': frame_base64
                     }
@@ -250,6 +257,8 @@ class WebSocketServer:
                 'type': 'posture_saved',
                 'success': success,
                 'good_pitch': self.detector.good_head_pitch_angle,
+                'good_roll': self.detector.good_head_roll,
+                'good_shoulder_tilt': self.detector.good_shoulder_tilt,
                 'good_distance': self.detector.good_head_distance
             }))
         except Exception as e:

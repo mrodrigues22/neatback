@@ -15,6 +15,29 @@ class PostureAnalyzer:
         # Warning thresholds (in seconds)
         self.initial_warning_seconds = 5
         self.repeat_warning_interval = 20
+    
+    def _generate_warning_message(self, issues, duration):
+        """Generate specific warning message based on posture issues."""
+        if not issues:
+            return "Good posture"
+        
+        issue_descriptions = {
+            'head_pitch': 'head tilted down',
+            'distance': 'leaning too close',
+            'head_roll': 'head tilted sideways',
+            'shoulder_tilt': 'shoulders uneven'
+        }
+        
+        messages = [issue_descriptions[issue] for issue in issues if issue in issue_descriptions]
+        
+        if len(messages) == 0:
+            return f"Bad posture for {duration} seconds"
+        elif len(messages) == 1:
+            return f"Bad posture: {messages[0]} ({duration}s)"
+        elif len(messages) == 2:
+            return f"Bad posture: {messages[0]} and {messages[1]} ({duration}s)"
+        else:
+            return f"Bad posture: {', '.join(messages[:-1])}, and {messages[-1]} ({duration}s)"
         
     def update(self, posture_status):
         """
@@ -28,12 +51,16 @@ class PostureAnalyzer:
                 'should_warn': bool,
                 'bad_duration': int (seconds),
                 'pitch': float,
+                'roll': float,
+                'shoulder_tilt': float,
                 'distance': float,
+                'posture_issues': list,
                 'message': str
             }
         """
         current_time = time.time()
         is_bad = posture_status.get('is_bad', False)
+        issues = posture_status.get('posture_issues', [])
         
         if is_bad:
             # Bad posture detected
@@ -59,8 +86,11 @@ class PostureAnalyzer:
                 'should_warn': should_warn,
                 'bad_duration': self.bad_posture_duration,
                 'pitch': posture_status.get('adjusted_pitch'),
+                'roll': posture_status.get('adjusted_roll'),
+                'shoulder_tilt': posture_status.get('adjusted_shoulder_tilt'),
                 'distance': posture_status.get('distance'),
-                'message': f"Bad posture for {self.bad_posture_duration} seconds"
+                'posture_issues': issues,
+                'message': self._generate_warning_message(issues, self.bad_posture_duration)
             }
         else:
             # Good posture
@@ -82,7 +112,10 @@ class PostureAnalyzer:
                 'should_warn': False,
                 'bad_duration': 0,
                 'pitch': posture_status.get('adjusted_pitch'),
+                'roll': posture_status.get('adjusted_roll'),
+                'shoulder_tilt': posture_status.get('adjusted_shoulder_tilt'),
                 'distance': posture_status.get('distance'),
+                'posture_issues': [],
                 'message': "Good posture"
             }
     

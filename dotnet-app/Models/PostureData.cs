@@ -25,6 +25,21 @@ public class PostureData
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
     
+    [JsonPropertyName("roll_angle")]
+    public double? RollAngle { get; set; }
+    
+    [JsonPropertyName("adjusted_roll")]
+    public double? AdjustedRoll { get; set; }
+    
+    [JsonPropertyName("shoulder_tilt")]
+    public double? ShoulderTilt { get; set; }
+    
+    [JsonPropertyName("adjusted_shoulder_tilt")]
+    public double? AdjustedShoulderTilt { get; set; }
+    
+    [JsonPropertyName("posture_issues")]
+    public List<string>? PostureIssues { get; set; }
+    
     [JsonPropertyName("error")]
     public string? Error { get; set; }
     

@@ -28,13 +28,41 @@ class PostureDetector:
         
         self.face_landmarker = self.FaceLandmarker.create_from_options(options)
         
+        # Initialize MediaPipe Pose Landmarker
+        self.PoseLandmarker = mp.tasks.vision.PoseLandmarker
+        self.PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+        
+        # Get path to pose model
+        pose_model_path = os.path.join(script_dir, 'pose_landmarker.task')
+        
+        # Configure pose landmarker (only if model file exists)
+        self.pose_landmarker = None
+        if os.path.exists(pose_model_path):
+            try:
+                pose_options = self.PoseLandmarkerOptions(
+                    base_options=self.BaseOptions(model_asset_path=pose_model_path),
+                    running_mode=self.VisionRunningMode.VIDEO,
+                    num_poses=1,
+                    min_pose_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                self.pose_landmarker = self.PoseLandmarker.create_from_options(pose_options)
+            except Exception as e:
+                print(f"Warning: Could not initialize Pose Landmarker: {e}")
+        else:
+            print(f"Warning: Pose model not found at {pose_model_path}. Shoulder tilt detection will be disabled.")
+        
         # Good posture baseline (None until calibrated)
         self.good_head_pitch_angle = None
         self.good_head_distance = None
+        self.good_head_roll = None
+        self.good_shoulder_tilt = None
         
         # Configurable thresholds
         self.pitch_threshold = -10  # degrees (negative = looking down)
         self.distance_threshold = 10  # cm (closer than baseline)
+        self.head_roll_threshold = 15  # degrees
+        self.shoulder_tilt_threshold = 10  # degrees
         
         # 3D face model coordinates (in mm)
         self.face_3d_model = np.array([
@@ -77,8 +105,8 @@ class PostureDetector:
         
         return np.array(coords_2d, dtype=np.float64)
     
-    def calculate_pitch_angle(self, landmarks, frame_shape):
-        """Calculate head pitch angle using PnP algorithm."""
+    def calculate_head_angles(self, landmarks, frame_shape):
+        """Calculate head orientation angles (pitch, yaw, roll) using PnP algorithm."""
         height, width = frame_shape[:2]
         
         # Get 2D coordinates for key landmarks
@@ -105,34 +133,43 @@ class PostureDetector:
         )
         
         if not success:
-            return None
+            return None, None, None
         
         # Convert rotation vector to rotation matrix
         rot_matrix, _ = cv2.Rodrigues(rot_vec)
         
-        # Extract pitch angle from rotation matrix
-        pitch_angle = self._rotation_matrix_to_pitch(rot_matrix)
+        # Extract all Euler angles
+        pitch, yaw, roll = self._rotation_matrix_to_euler_angles(rot_matrix)
         
-        # Normalize angle to proper range
-        if pitch_angle > 0:
-            pitch_angle = 180 - pitch_angle
+        # Normalize pitch angle to proper range
+        if pitch > 0:
+            pitch = 180 - pitch
         else:
-            pitch_angle = -180 - pitch_angle
+            pitch = -180 - pitch
         
-        return pitch_angle
+        return pitch, yaw, roll
     
-    def _rotation_matrix_to_pitch(self, R):
-        """Convert rotation matrix to pitch angle in degrees."""
+    def calculate_pitch_angle(self, landmarks, frame_shape):
+        """Calculate head pitch angle (backward compatibility)."""
+        pitch, _, _ = self.calculate_head_angles(landmarks, frame_shape)
+        return pitch
+    
+    def _rotation_matrix_to_euler_angles(self, R):
+        """Convert rotation matrix to Euler angles (pitch, yaw, roll) in degrees."""
         sy = np.sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)
         singular = sy < 1e-6
         
         if not singular:
             pitch = np.arctan2(R[2, 1], R[2, 2])
+            yaw = np.arctan2(-R[2, 0], sy)
+            roll = np.arctan2(R[1, 0], R[0, 0])
         else:
             pitch = np.arctan2(-R[1, 2], R[1, 1])
+            yaw = np.arctan2(-R[2, 0], sy)
+            roll = 0
         
         # Convert radians to degrees
-        return np.degrees(pitch)
+        return (np.degrees(pitch), np.degrees(yaw), np.degrees(roll))
     
     def calculate_distance(self, landmarks, frame_shape):
         """Calculate head-to-camera distance using interpupillary distance (IPD) method."""
@@ -167,19 +204,75 @@ class PostureDetector:
         
         return distance
     
+    def detect_pose_landmarks(self, frame, timestamp_ms):
+        """Detect body landmarks using MediaPipe Pose Landmarker."""
+        if self.pose_landmarker is None:
+            return None
+        
+        try:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            
+            detection_result = self.pose_landmarker.detect_for_video(mp_image, timestamp_ms)
+            
+            if detection_result.pose_landmarks:
+                return detection_result.pose_landmarks[0]
+        except Exception as e:
+            print(f"Error detecting pose landmarks: {e}")
+        
+        return None
+    
+    def calculate_shoulder_tilt(self, pose_landmarks, frame_shape):
+        """Calculate shoulder tilt angle from horizontal.
+        
+        Returns:
+            float: Angle in degrees (positive = right shoulder higher)
+        """
+        if not pose_landmarks or len(pose_landmarks) < 13:
+            return None
+        
+        height, width = frame_shape[:2]
+        
+        # Get shoulder landmarks (11 = left, 12 = right)
+        left_shoulder = pose_landmarks[11]
+        right_shoulder = pose_landmarks[12]
+        
+        # Convert to pixel coordinates
+        left_x = left_shoulder.x * width
+        left_y = left_shoulder.y * height
+        right_x = right_shoulder.x * width
+        right_y = right_shoulder.y * height
+        
+        # Calculate angle from horizontal
+        delta_y = right_y - left_y
+        delta_x = right_x - left_x
+        
+        # Angle in degrees (0 = level, positive = right shoulder higher)
+        angle = np.degrees(np.arctan2(delta_y, delta_x))
+        
+        return angle
+    
     def save_good_posture(self, frame, timestamp_ms):
         """Capture current posture as good posture baseline."""
-        landmarks = self.detect_landmarks(frame, timestamp_ms)
+        face_landmarks = self.detect_landmarks(frame, timestamp_ms)
         
-        if not landmarks:
+        if not face_landmarks:
             return False
         
-        pitch_angle = self.calculate_pitch_angle(landmarks, frame.shape)
-        distance = self.calculate_distance(landmarks, frame.shape)
+        pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
+        distance = self.calculate_distance(face_landmarks, frame.shape)
         
-        if pitch_angle is not None and distance is not None:
-            self.good_head_pitch_angle = pitch_angle
+        # Try to get shoulder tilt
+        pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
+        shoulder_tilt = None
+        if pose_landmarks:
+            shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
+        
+        if pitch is not None and distance is not None:
+            self.good_head_pitch_angle = pitch
+            self.good_head_roll = roll if roll is not None else 0
             self.good_head_distance = distance
+            self.good_shoulder_tilt = shoulder_tilt if shoulder_tilt is not None else 0
             return True
         
         return False
@@ -192,61 +285,112 @@ class PostureDetector:
             dict: {
                 'is_bad': bool,
                 'pitch_angle': float,
+                'roll_angle': float,
+                'shoulder_tilt': float,
                 'distance': float,
                 'adjusted_pitch': float,
+                'adjusted_roll': float,
+                'adjusted_shoulder_tilt': float,
+                'posture_issues': list,
                 'error': str (optional)
             }
         """
-        landmarks = self.detect_landmarks(frame, timestamp_ms)
+        face_landmarks = self.detect_landmarks(frame, timestamp_ms)
         
-        if not landmarks:
+        if not face_landmarks:
             return {
                 'is_bad': False,
                 'pitch_angle': None,
+                'roll_angle': None,
+                'shoulder_tilt': None,
                 'distance': None,
                 'adjusted_pitch': None,
+                'adjusted_roll': None,
+                'adjusted_shoulder_tilt': None,
+                'posture_issues': [],
                 'error': 'No face detected'
             }
         
-        # Calculate metrics
-        pitch_angle = self.calculate_pitch_angle(landmarks, frame.shape)
-        distance = self.calculate_distance(landmarks, frame.shape)
+        # Calculate face metrics
+        pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
+        distance = self.calculate_distance(face_landmarks, frame.shape)
+        
+        # Calculate body metrics
+        pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
+        shoulder_tilt = None
+        if pose_landmarks:
+            shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
         
         # If no baseline saved, can't determine bad posture
         if self.good_head_pitch_angle is None:
             return {
                 'is_bad': False,
-                'pitch_angle': pitch_angle,
+                'pitch_angle': pitch,
+                'roll_angle': roll,
+                'shoulder_tilt': shoulder_tilt,
                 'distance': distance,
                 'adjusted_pitch': None,
+                'adjusted_roll': None,
+                'adjusted_shoulder_tilt': None,
+                'posture_issues': [],
                 'error': 'No baseline posture saved'
             }
         
-        # Calculate adjusted pitch relative to baseline
-        adjusted_pitch = pitch_angle - self.good_head_pitch_angle
+        # Calculate adjusted values relative to baseline
+        adjusted_pitch = pitch - self.good_head_pitch_angle
+        adjusted_roll = roll - self.good_head_roll if roll is not None and self.good_head_roll is not None else 0
+        adjusted_shoulder_tilt = shoulder_tilt - self.good_shoulder_tilt if shoulder_tilt is not None and self.good_shoulder_tilt is not None else 0
         
         # Determine if posture is bad
-        is_bad = self._is_posture_bad(adjusted_pitch, distance, self.good_head_distance)
+        is_bad, issues = self._is_posture_bad(
+            adjusted_pitch, 
+            adjusted_roll, 
+            adjusted_shoulder_tilt,
+            distance, 
+            self.good_head_distance
+        )
         
         return {
             'is_bad': is_bad,
-            'pitch_angle': round(pitch_angle, 2) if pitch_angle else None,
+            'pitch_angle': round(pitch, 2) if pitch else None,
+            'roll_angle': round(roll, 2) if roll else None,
+            'shoulder_tilt': round(shoulder_tilt, 2) if shoulder_tilt else None,
             'distance': round(distance, 2) if distance else None,
-            'adjusted_pitch': round(adjusted_pitch, 2) if adjusted_pitch else None
+            'adjusted_pitch': round(adjusted_pitch, 2) if adjusted_pitch else None,
+            'adjusted_roll': round(adjusted_roll, 2) if adjusted_roll else None,
+            'adjusted_shoulder_tilt': round(adjusted_shoulder_tilt, 2) if adjusted_shoulder_tilt else None,
+            'posture_issues': issues
         }
     
-    def _is_posture_bad(self, adjusted_pitch, current_distance, good_distance):
-        """Determine if current posture is bad based on thresholds."""
-        # Bad if looking down too much (negative pitch)
+    def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance):
+        """Determine if current posture is bad based on thresholds.
+        
+        Returns:
+            tuple: (is_bad, reasons)
+        """
+        reasons = []
+        
+        # Check pitch (looking down)
         if adjusted_pitch < self.pitch_threshold:
-            return True
+            reasons.append('head_pitch')
         
-        # Bad if too close to camera (leaning forward)
+        # Check distance (leaning forward)
         if (good_distance - current_distance) > self.distance_threshold:
-            return True
+            reasons.append('distance')
         
-        return False
+        # Check head roll (head tilted sideways)
+        if abs(adjusted_roll) > self.head_roll_threshold:
+            reasons.append('head_roll')
+        
+        # Check shoulder tilt (body tilted sideways)
+        if abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
+            reasons.append('shoulder_tilt')
+        
+        is_bad = len(reasons) > 0
+        return is_bad, reasons
     
     def close(self):
         """Clean up resources."""
         self.face_landmarker.close()
+        if self.pose_landmarker is not None:
+            self.pose_landmarker.close()
