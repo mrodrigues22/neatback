@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "NeatBack (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "NeatBack (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
