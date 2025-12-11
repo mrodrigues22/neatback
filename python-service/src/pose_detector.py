@@ -62,7 +62,15 @@ class PostureDetector:
         self.pitch_threshold = -10  # degrees (negative = looking down)
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
-        self.shoulder_tilt_threshold = 10  # degrees
+        self.shoulder_tilt_threshold = 7  # degrees (lowered from 10 to catch subtle tilts)
+        
+        # Compensation detection settings
+        self.compensation_detection_enabled = True
+        self.min_tilt_for_compensation = 5  # degrees
+        self.compensation_ratio_threshold = 0.7  # 70% match indicates compensation
+        
+        # Track last compensation description for messaging
+        self._last_compensation_desc = None
         
         # 3D face model coordinates (in mm)
         self.face_3d_model = np.array([
@@ -153,6 +161,59 @@ class PostureDetector:
         """Calculate head pitch angle (backward compatibility)."""
         pitch, _, _ = self.calculate_head_angles(landmarks, frame_shape)
         return pitch
+    
+    def _detect_compensation(self, adjusted_roll, adjusted_shoulder_tilt):
+        """
+        Detect if user is compensating body tilt with head tilt.
+        
+        Returns:
+            tuple: (is_compensating: bool, description: str or None)
+        """
+        if not self.compensation_detection_enabled:
+            return False, None
+        
+        # Skip if either measurement is missing
+        if adjusted_roll is None or adjusted_shoulder_tilt is None:
+            return False, None
+        
+        # Check if both have significant tilt (>5°)
+        has_head_tilt = abs(adjusted_roll) > self.min_tilt_for_compensation
+        has_shoulder_tilt = abs(adjusted_shoulder_tilt) > self.min_tilt_for_compensation
+        
+        if not (has_head_tilt or has_shoulder_tilt):
+            return False, None
+        
+        # Check if tilts are in opposite directions
+        opposite_directions = (adjusted_roll * adjusted_shoulder_tilt) < 0
+        
+        if opposite_directions:
+            # Calculate compensation ratio
+            smaller = min(abs(adjusted_roll), abs(adjusted_shoulder_tilt))
+            larger = max(abs(adjusted_roll), abs(adjusted_shoulder_tilt))
+            ratio = smaller / larger if larger > 0 else 0
+            
+            if ratio > self.compensation_ratio_threshold:
+                # Determine pattern
+                if adjusted_shoulder_tilt > 0:
+                    description = "Body leaning right, head compensating left"
+                else:
+                    description = "Body leaning left, head compensating right"
+                
+                return True, description
+        
+        return False, None
+    
+    def _get_shoulder_confidence(self, pose_landmarks):
+        """Get average visibility/confidence of shoulder landmarks."""
+        if not pose_landmarks or len(pose_landmarks) < 13:
+            return 0.0
+        
+        left_shoulder = pose_landmarks[11]
+        right_shoulder = pose_landmarks[12]
+        
+        # MediaPipe provides visibility score for each landmark
+        avg_visibility = (left_shoulder.visibility + right_shoulder.visibility) / 2
+        return round(avg_visibility, 2)
     
     def _rotation_matrix_to_euler_angles(self, R):
         """Convert rotation matrix to Euler angles (pitch, yaw, roll) in degrees."""
@@ -359,7 +420,10 @@ class PostureDetector:
             'adjusted_pitch': round(adjusted_pitch, 2) if adjusted_pitch else None,
             'adjusted_roll': round(adjusted_roll, 2) if adjusted_roll else None,
             'adjusted_shoulder_tilt': round(adjusted_shoulder_tilt, 2) if adjusted_shoulder_tilt else None,
-            'posture_issues': issues
+            'posture_issues': issues,
+            'shoulder_detection_active': pose_landmarks is not None,
+            'shoulder_detection_confidence': self._get_shoulder_confidence(pose_landmarks),
+            'compensation_description': self._last_compensation_desc
         }
     
     def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance):
@@ -378,13 +442,24 @@ class PostureDetector:
         if (good_distance - current_distance) > self.distance_threshold:
             reasons.append('distance')
         
-        # Check head roll (head tilted sideways)
-        if abs(adjusted_roll) > self.head_roll_threshold:
-            reasons.append('head_roll')
+        # Check for compensation pattern FIRST (before individual checks)
+        is_compensating, compensation_desc = self._detect_compensation(
+            adjusted_roll, adjusted_shoulder_tilt
+        )
         
-        # Check shoulder tilt (body tilted sideways)
-        if abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
-            reasons.append('shoulder_tilt')
+        if is_compensating:
+            reasons.append('body_compensation')
+            # Store compensation description for warning message
+            self._last_compensation_desc = compensation_desc
+        else:
+            # Only check individual thresholds if no compensation detected
+            # Check head roll (head tilted sideways)
+            if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
+                reasons.append('head_roll')
+            
+            # Check shoulder tilt (body tilted sideways)
+            if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
+                reasons.append('shoulder_tilt')
         
         is_bad = len(reasons) > 0
         return is_bad, reasons

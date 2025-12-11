@@ -21,6 +21,10 @@ class PostureAnalyzer:
         if not issues:
             return "Good posture"
         
+        # Special case: If compensation detected, make it primary message
+        if 'body_compensation' in issues:
+            return f"⚠️ Bad posture: compensating body tilt with head tilt ({duration}s)"
+        
         issue_descriptions = {
             'head_pitch': 'head tilted down',
             'distance': 'leaning too close',

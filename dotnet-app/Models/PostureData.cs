@@ -40,6 +40,15 @@ public class PostureData
     [JsonPropertyName("posture_issues")]
     public List<string>? PostureIssues { get; set; }
     
+    [JsonPropertyName("shoulder_detection_active")]
+    public bool? ShoulderDetectionActive { get; set; }
+    
+    [JsonPropertyName("shoulder_detection_confidence")]
+    public double? ShoulderDetectionConfidence { get; set; }
+    
+    [JsonPropertyName("compensation_description")]
+    public string? CompensationDescription { get; set; }
+    
     [JsonPropertyName("error")]
     public string? Error { get; set; }
     
