@@ -1,5 +1,6 @@
 import cv2
 import asyncio
+import base64
 from pose_detector import PoseDetector
 from posture_analyzer import PostureAnalyzer
 from websocket_server import WebSocketServer
@@ -38,6 +39,13 @@ class PostureService:
         landmarks = self.detector.detect(frame)
         if landmarks:
             result = self.analyzer.analyze(landmarks.landmark)
+            
+            # Encode frame as JPEG and convert to base64
+            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            frame_base64 = base64.b64encode(buffer).decode('utf-8')
+            result['frame'] = frame_base64
+            print(f"Frame size: {len(frame_base64)} bytes, angle: {result['neck_angle']:.1f}°")
+            
             return result
         return None
     

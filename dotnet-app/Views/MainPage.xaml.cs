@@ -1,7 +1,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using NeatBack.Models;
 using NeatBack.Services;
+using System;
+using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace NeatBack.Views;
 
@@ -56,10 +60,27 @@ public sealed partial class MainPage : Page
     
     private void OnPostureDataReceived(object? sender, PostureData data)
     {
-        DispatcherQueue.TryEnqueue(() =>
+        DispatcherQueue.TryEnqueue(async () =>
         {
             AngleText.Text = $"Neck Angle: {data.neck_angle}°";
             StatusText.Text = data.is_good ? "Good Posture ✓" : "Bad Posture ✗";
+            
+            // Display webcam frame if available
+            if (!string.IsNullOrEmpty(data.frame))
+            {
+                try
+                {
+                    var imageBytes = Convert.FromBase64String(data.frame);
+                    using var stream = new MemoryStream(imageBytes);
+                    var bitmap = new BitmapImage();
+                    await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
+                    WebcamImage.Source = bitmap;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error displaying frame: {ex.Message}");
+                }
+            }
             
             // Track bad posture duration
             if (!data.is_good)
