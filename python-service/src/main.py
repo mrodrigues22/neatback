@@ -35,19 +35,21 @@ class PostureService:
         self.open_camera()
         
         # Start WebSocket server
-        asyncio.create_task(self.ws_server.start())
+        server_task = asyncio.create_task(self.ws_server.start())
         await asyncio.sleep(1)  # Let server start
         
         print("Posture tracking started...")
         
-        while self.running:
-            result = await self.process_frame()
-            if result:
-                await self.ws_server.send(result)
-            await asyncio.sleep(0.1)  # 10 FPS
-        
-        self.cap.release()
-        self.detector.close()
+        try:
+            while self.running:
+                result = await self.process_frame()
+                if result:
+                    await self.ws_server.send(result)
+                await asyncio.sleep(0.1)  # 10 FPS
+        finally:
+            self.cap.release()
+            self.detector.close()
+            server_task.cancel()
 
 if __name__ == "__main__":
     service = PostureService()
@@ -55,3 +57,4 @@ if __name__ == "__main__":
         asyncio.run(service.run())
     except KeyboardInterrupt:
         print("\nStopping...")
+        service.running = False

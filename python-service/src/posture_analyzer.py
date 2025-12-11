@@ -27,6 +27,6 @@ class PostureAnalyzer:
         is_good_posture = 80 <= neck_angle <= 100
         
         return {
-            "is_good": is_good_posture,
-            "neck_angle": round(neck_angle, 1)
+            "is_good": bool(is_good_posture),
+            "neck_angle": float(round(neck_angle, 1))
         }

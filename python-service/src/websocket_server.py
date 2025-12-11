@@ -26,7 +26,7 @@ class WebSocketServer:
             return_exceptions=True
         )
     
-    async def handler(self, websocket, path):
+    async def handler(self, websocket):
         await self.register(websocket)
         try:
             await websocket.wait_closed()
