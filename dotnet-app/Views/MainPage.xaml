@@ -255,7 +255,7 @@
                                     <StackPanel Spacing="4">
                                         <Grid>
                                             <TextBlock Text="📏 Distance" FontSize="13" FontWeight="Medium" Foreground="#374151" />
-                                            <TextBlock x:Name="DistanceThresholdValue" Text="10 cm" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock x:Name="DistanceThresholdValue" Text="4 in" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
                                         <Slider x:Name="DistanceThresholdSlider" Minimum="5" Maximum="20" Value="10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
                                     </StackPanel>

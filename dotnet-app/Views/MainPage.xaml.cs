@@ -132,7 +132,7 @@ public sealed partial class MainPage : Page
         if (_pitchText != null) _pitchText.Text = "--°";
         if (_rollText != null) _rollText.Text = "--°";
         if (_shoulderTiltText != null) _shoulderTiltText.Text = "--°";
-        if (_distanceText != null) _distanceText.Text = "-- cm";
+        if (_distanceText != null) _distanceText.Text = "-- in";
         if (_badDurationText != null) _badDurationText.Text = "0 s";
         if (_badPostureProgress != null)
         {
@@ -192,7 +192,9 @@ public sealed partial class MainPage : Page
             
             if (data.Distance.HasValue)
             {
-                if (_distanceText != null) _distanceText.Text = $"{data.Distance.Value:F1} cm";
+                // Convert cm to inches for display
+                var inches = data.Distance.Value / 2.54;
+                if (_distanceText != null) _distanceText.Text = $"{inches:F1} in";
             }
             
             if (_badDurationText != null) _badDurationText.Text = $"{data.BadDuration} s";
@@ -268,7 +270,10 @@ public sealed partial class MainPage : Page
         if (_pitchThresholdValue != null)
             _pitchThresholdValue.Text = $"{pitchThreshold:F0}°";
         if (_distanceThresholdValue != null)
-            _distanceThresholdValue.Text = $"{distanceThreshold:F0} cm";
+        {
+            var inches = distanceThreshold / 2.54;
+            _distanceThresholdValue.Text = $"{inches:F0} in";
+        }
         if (_headRollThresholdValue != null)
             _headRollThresholdValue.Text = $"{headRollThreshold:F0}°";
         if (_shoulderTiltThresholdValue != null)
