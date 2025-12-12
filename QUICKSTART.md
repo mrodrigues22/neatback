@@ -1,4 +1,4 @@
-# NeatBack - Quick Start Guide
+# Slouti - Quick Start Guide
 
 ## 🚀 Get Started in 5 Minutes
 
@@ -22,7 +22,7 @@ python main.py
 **Keep this window open!** You should see:
 ```
 ============================================================
-NeatBack Posture Analysis Service
+Slouti Posture Analysis Service
 ============================================================
 WebSocket server starting on ws://localhost:8765
 ```

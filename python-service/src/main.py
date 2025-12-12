@@ -20,7 +20,7 @@ class PostureService:
         self.running = True
         
         print("="*60)
-        print("NeatBack Posture Analysis Service")
+        print("Slouti Posture Analysis Service")
         print("="*60)
         print("Starting WebSocket server...")
         print("\nWaiting for client connection...")

@@ -1,10 +1,10 @@
-# NeatBack - Advanced Posture Tracking Application
+# Slouti - Advanced Posture Tracking Application
 
 A real-time posture monitoring system that uses facial landmark detection to track your sitting posture and alerts you when you slouch.
 
 ## 🎯 Overview
 
-NeatBack uses advanced computer vision to monitor your posture by tracking facial landmarks and head position. Unlike traditional pose detection that requires full-body visibility, this system focuses on head pitch angle and distance from the camera for more accurate sitting posture analysis.
+Slouti uses advanced computer vision to monitor your posture by tracking facial landmarks and head position. Unlike traditional pose detection that requires full-body visibility, this system focuses on head pitch angle and distance from the camera for more accurate sitting posture analysis.
 
 ## ✨ Features
 
@@ -127,7 +127,7 @@ python main.py
 Expected output:
 ```
 ============================================================
-NeatBack Posture Analysis Service
+Slouti Posture Analysis Service
 ============================================================
 Starting WebSocket server...
 Waiting for client connection...
@@ -142,7 +142,7 @@ cd dotnet-app
 dotnet run
 ```
 
-Or open `NeatBack.slnx` in Visual Studio and press F5.
+Or open `Slouti.slnx` in Visual Studio and press F5.
 
 ## 📖 Usage Guide
 
@@ -181,7 +181,7 @@ Use the sliders to customize detection thresholds:
 ## 📁 Project Structure
 
 ```
-neatback/
+slouti/
 ├── dotnet-app/              # WinUI application
 │   ├── Models/
 │   │   └── PostureData.cs
@@ -191,7 +191,7 @@ neatback/
 │   ├── Views/
 │   │   ├── MainPage.xaml
 │   │   └── MainPage.xaml.cs
-│   └── NeatBack.csproj
+│   └── Slouti.csproj
 ├── python-service/          # Analysis service
 │   ├── src/
 │   │   ├── main.py

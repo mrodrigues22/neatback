@@ -1,8 +1,8 @@
-# NeatBack - Detailed Technical Guide
+# Slouti - Detailed Technical Guide
 
 ## Architecture Overview
 
-NeatBack uses a **client-server architecture** with asynchronous communication:
+Slouti uses a **client-server architecture** with asynchronous communication:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -411,7 +411,7 @@ This sets up the navigation container that can switch between pages.
 
 ```xml
 <StackPanel Padding="20" Spacing="15">
-    <TextBlock Text="NeatBack - Posture Tracker" /> <!-- Title -->
+    <TextBlock Text="Slouti - Posture Tracker" /> <!-- Title -->
     <Button x:Name="StartButton" 
             Content="Start Monitoring" 
             Click="StartButton_Click" /> <!-- Action button -->
@@ -1055,7 +1055,7 @@ Add registry entry or use Windows Task Scheduler.
 
 ## Summary
 
-NeatBack is a well-architected application that demonstrates:
+Slouti is a well-architected application that demonstrates:
 - **Separation of concerns**: AI/CV logic in Python, UI in .NET
 - **Asynchronous programming**: Non-blocking I/O throughout
 - **Real-time communication**: WebSocket for low-latency data transfer

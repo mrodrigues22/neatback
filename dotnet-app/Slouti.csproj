@@ -14,7 +14,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>NeatBack</RootNamespace>
+        <RootNamespace>Slouti</RootNamespace>
 
         <!-- App Options -->
         <UseRidGraph>true</UseRidGraph>
@@ -38,7 +38,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Remove="NeatBack.slnx" />
+        <None Remove="Slouti.slnx" />
     </ItemGroup>
 
     <ItemGroup>

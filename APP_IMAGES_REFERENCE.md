@@ -1,8 +1,8 @@
-# NeatBack App Images Reference
+# Slouti App Images Reference
 
 ## ⚠️ IMPORTANT: Unpackaged App Configuration
 
-**This app runs as UNPACKAGED** (`WindowsPackageType = None` in NeatBack.csproj).
+**This app runs as UNPACKAGED** (`WindowsPackageType = None` in Slouti.csproj).
 
 For unpackaged apps, **ONLY the ICO file is used** for all system icons:
 - Window title bar
@@ -16,7 +16,7 @@ For unpackaged apps, **ONLY the ICO file is used** for all system icons:
 
 | File Name | Size (pixels) | Format | Usage | Status |
 |-----------|---------------|--------|-------|--------|
-| **logo-square.ico** | 16x16, 32x32, 48x48, 256x256 (multi-res) | ICO | **ALL ICONS** (window, taskbar, alt-tab, etc.) | ✅ **ACTIVE** - `NeatBack.csproj` Line 23 |
+| **logo-square.ico** | 16x16, 32x32, 48x48, 256x256 (multi-res) | ICO | **ALL ICONS** (window, taskbar, alt-tab, etc.) | ✅ **ACTIVE** - `Slouti.csproj` Line 23 |
 | **Square44x44Logo.scale-200.png** | 88x88 | PNG | Taskbar icon (packaged only) | ❌ INACTIVE (unpackaged app) |
 | **Square44x44Logo.targetsize-24_altform-unplated.png** | 24x24 | PNG | Small icon (packaged only) | ❌ INACTIVE (unpackaged app) |
 | **Square150x150Logo.scale-200.png** | 300x300 | PNG | Start menu tile (packaged only) | ❌ INACTIVE (unpackaged app) |

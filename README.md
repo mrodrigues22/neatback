@@ -1,4 +1,4 @@
-# NeatBack - Posture Tracking App
+# Slouti - Posture Tracking App
 
 A simple Windows desktop application that tracks your posture using webcam and AI, and sends notifications when you slouch.
 
@@ -11,7 +11,7 @@ A simple Windows desktop application that tracks your posture using webcam and A
 ## Project Structure
 
 ```
-neatback/
+slouti/
 ├── python-service/          # Python posture detection service
 │   ├── src/
 │   │   ├── pose_detector.py
@@ -130,7 +130,7 @@ dotnet run
 
 **No notifications appearing:**
 - Check Windows notification settings
-- Ensure notifications are enabled for the NeatBack app
+- Ensure notifications are enabled for the Slouti app
 
 ## Future Improvements
 

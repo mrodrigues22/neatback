@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace NeatBack.Models;
+namespace Slouti.Models;
 
 public class PostureData
 {

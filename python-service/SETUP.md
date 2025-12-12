@@ -67,7 +67,7 @@ python main.py
 You should see:
 ```
 ============================================================
-NeatBack Posture Analysis Service
+Slouti Posture Analysis Service
 ============================================================
 Starting WebSocket server...
 The service will capture frames directly from your webcam.

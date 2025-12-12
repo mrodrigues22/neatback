@@ -1,9 +1,9 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using NeatBack.Models;
+using Slouti.Models;
 
-namespace NeatBack.Services;
+namespace Slouti.Services;
 
 public class WebSocketMessage
 {

@@ -1,8 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using NeatBack.Models;
-using NeatBack.Services;
+using Slouti.Models;
+using Slouti.Services;
 using System;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
@@ -11,7 +11,7 @@ using Windows.Media.Capture;
 using Windows.Media.MediaProperties;
 using Microsoft.UI.Dispatching;
 
-namespace NeatBack.Views;
+namespace Slouti.Views;
 
 public sealed partial class MainPage : Page
 {

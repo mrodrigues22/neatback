@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml.Navigation;
 using System.IO;
 
-namespace NeatBack
+namespace Slouti
 {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.

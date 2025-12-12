@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "NeatBack (Package)": {
+    "Slouti (Package)": {
       "commandName": "MsixPackage"
     },
-    "NeatBack (Unpackaged)": {
+    "Slouti (Unpackaged)": {
       "commandName": "Project"
     }
   }

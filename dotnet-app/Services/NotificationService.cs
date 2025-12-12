@@ -2,7 +2,7 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 
-namespace NeatBack.Services;
+namespace Slouti.Services;
 
 public class NotificationService
 {

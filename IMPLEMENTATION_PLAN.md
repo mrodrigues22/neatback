@@ -1,4 +1,4 @@
-# NeatBack - Posture Tracking App MVP Implementation Plan
+# Slouti - Posture Tracking App MVP Implementation Plan
 
 > **Note**: This document describes an early implementation plan using body pose detection. The actual implementation uses **MediaPipe Face Landmarker** for more accurate sitting posture detection, and the Python service captures frames directly from the webcam rather than receiving them from the .NET app. See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for the current implementation.
 
@@ -18,7 +18,7 @@ A simple Windows desktop application that:
 ## MVP Project Structure
 
 ```
-neatback/
+slouti/
 ├── python-service/          # Python posture detection
 │   ├── src/
 │   │   ├── pose_detector.py
@@ -27,8 +27,8 @@ neatback/
 │   │   └── main.py
 │   └── requirements.txt
 ├── dotnet-app/              # WinUI3 app
-│   ├── NeatBack.sln
-│   └── NeatBack/
+│   ├── Slouti.sln
+│   └── Slouti/
 │       ├── MainWindow.xaml
 │       ├── Services/
 │       │   ├── WebSocketClient.cs
@@ -233,8 +233,8 @@ if __name__ == "__main__":
 ### 2.1 Create WinUI3 Project
 ```bat
 cd dotnet-app
-dotnet new wasdk -n NeatBack
-cd NeatBack
+dotnet new wasdk -n Slouti
+cd Slouti
 dotnet add package Microsoft.Toolkit.Uwp.Notifications
 dotnet build
 ```
@@ -380,11 +380,11 @@ public sealed partial class MainWindow : Window
 **File: `MainWindow.xaml`**
 
 ```xml
-<Window x:Class="NeatBack.MainWindow"
+<Window x:Class="Slouti.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
     
     <StackPanel Padding="20" Spacing="15">
-        <TextBlock Text="NeatBack - Posture Tracker" 
+        <TextBlock Text="Slouti - Posture Tracker" 
                    FontSize="24" FontWeight="Bold"/>
         
         <Button x:Name="StartButton" Content="Start Monitoring" 
@@ -412,7 +412,7 @@ python src\main.py
 
 ### 3.2 Run .NET App
 ```bat
-cd dotnet-app\NeatBack
+cd dotnet-app\Slouti
 dotnet run
 ```
 

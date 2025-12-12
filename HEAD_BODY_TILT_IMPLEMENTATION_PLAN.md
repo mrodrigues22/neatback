@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive plan to add **lateral tilt detection** (left/right tilting of the head and body) to the NeatBack posture monitoring application. The system will detect when users tilt their head or shoulders sideways while facing the camera and warn them similar to existing pitch angle and distance warnings.
+This document provides a comprehensive plan to add **lateral tilt detection** (left/right tilting of the head and body) to the Slouti posture monitoring application. The system will detect when users tilt their head or shoulders sideways while facing the camera and warn them similar to existing pitch angle and distance warnings.
 
 ## Current System Analysis
 
@@ -984,7 +984,7 @@ Warning Preferences
 ```markdown
 ## New Feature: Head and Body Tilt Detection
 
-NeatBack now detects lateral tilting (sideways leaning):
+Slouti now detects lateral tilting (sideways leaning):
 
 1. **Head Roll**: Detects when your head tilts left or right
 2. **Shoulder Tilt**: Detects when one shoulder is higher than the other
@@ -1134,7 +1134,7 @@ Sit with BOTH good posture AND level head/shoulders:
 
 ## Conclusion
 
-This implementation plan provides a comprehensive roadmap for adding head and body tilt detection to the NeatBack posture monitoring application. By leveraging MediaPipe Pose Landmarker alongside the existing Face Landmarker and extracting roll angles from the existing PnP rotation matrix, we can detect lateral tilting with minimal performance impact.
+This implementation plan provides a comprehensive roadmap for adding head and body tilt detection to the Slouti posture monitoring application. By leveraging MediaPipe Pose Landmarker alongside the existing Face Landmarker and extracting roll angles from the existing PnP rotation matrix, we can detect lateral tilting with minimal performance impact.
 
 The phased approach ensures systematic implementation with testing at each stage, while the detailed technical specifications provide clear guidance for developers. The plan accounts for edge cases, performance considerations, and user experience, setting the foundation for a robust feature that significantly enhances posture monitoring capabilities.
 

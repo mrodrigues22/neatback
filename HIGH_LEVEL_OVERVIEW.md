@@ -1,8 +1,8 @@
-# NeatBack - High Level Overview
+# Slouti - High Level Overview
 
-## What is NeatBack?
+## What is Slouti?
 
-NeatBack is a Windows desktop application that helps you maintain good posture while working at your computer. It uses your webcam and AI to monitor your posture in real-time and sends you notifications when you've been slouching for too long.
+Slouti is a Windows desktop application that helps you maintain good posture while working at your computer. It uses your webcam and AI to monitor your posture in real-time and sends you notifications when you've been slouching for too long.
 
 ## The Big Picture
 

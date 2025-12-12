@@ -1,19 +1,19 @@
-# NeatBack Python Service Setup Script
+# Slouti Python Service Setup Script
 # This script installs dependencies and downloads the required MediaPipe model
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "NeatBack Python Service Setup" -ForegroundColor Cyan
+Write-Host "Slouti Python Service Setup" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Check if Python is installed
-Write-Host "Checking Python installation..." -ForegroundColor Yellow
+# Check if Python 3.11 is installed
+Write-Host "Checking Python 3.11 installation..." -ForegroundColor Yellow
 try {
-    $pythonVersion = python --version 2>&1
+    $pythonVersion = py -3.11 --version 2>&1
     Write-Host "Found: $pythonVersion" -ForegroundColor Green
 } catch {
-    Write-Host "Python not found! Please install Python 3.8 or higher." -ForegroundColor Red
-    Write-Host "  Download from: https://www.python.org/downloads/" -ForegroundColor Yellow
+    Write-Host "Python 3.11 not found! MediaPipe requires Python 3.11 or 3.12." -ForegroundColor Red
+    Write-Host "  Download Python 3.11 from: https://www.python.org/downloads/" -ForegroundColor Yellow
     exit 1
 }
 
@@ -29,6 +29,17 @@ if (-not (Test-Path $servicePath)) {
 }
 
 Set-Location $servicePath
+
+# Create virtual environment with Python 3.11 if it doesn't exist
+if (-not (Test-Path "venv")) {
+    Write-Host "Creating virtual environment with Python 3.11..." -ForegroundColor Yellow
+    py -3.11 -m venv venv
+    Write-Host "Virtual environment created" -ForegroundColor Green
+}
+
+# Activate virtual environment
+Write-Host "Activating virtual environment..." -ForegroundColor Yellow
+& ".\venv\Scripts\Activate.ps1"
 
 # Install Python dependencies
 Write-Host "Installing Python dependencies..." -ForegroundColor Yellow

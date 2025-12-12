@@ -3,7 +3,7 @@
 > **Note**: This guide describes the original implementation plan. The actual implementation differs in that the Python service now captures frames directly from the webcam using OpenCV, rather than receiving frames from the .NET UI. See the actual code in [python-service/src/websocket_server.py](python-service/src/websocket_server.py) for the current implementation.
 
 ## Overview
-This guide explains how to implement a new posture analysis logic into NeatBack application. The extension uses MediaPipe Face Landmarker and OpenCV to detect slouching in real-time.
+This guide explains how to implement a new posture analysis logic into Slouti application. The extension uses MediaPipe Face Landmarker and OpenCV to detect slouching in real-time.
 
 ## Core Technologies Used
 
@@ -238,14 +238,14 @@ The extension offers three processing speeds:
 - **Medium**: 2500ms (2.5 seconds)
 - **Slow**: 5000ms (5 seconds)
 
-## Implementation Steps for NeatBack
+## Implementation Steps for Slouti
 
 ### 1. Install Required Dependencies
 
 For your Windows app (WinUI/C#), you'll need:
 
 ```xml
-<!-- NeatBack.csproj -->
+<!-- Slouti.csproj -->
 <ItemGroup>
     <!-- For MediaPipe -->
     <PackageReference Include="MediaPipe.Net" Version="0.x.x" />
@@ -746,7 +746,7 @@ using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
-namespace NeatBack.Services
+namespace Slouti.Services
 {
     public class PostureData
     {
@@ -969,9 +969,9 @@ using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using System;
 using System.Threading.Tasks;
-using NeatBack.Services;
+using Slouti.Services;
 
-namespace NeatBack.Views
+namespace Slouti.Views
 {
     public sealed partial class MainPage : Page
     {
