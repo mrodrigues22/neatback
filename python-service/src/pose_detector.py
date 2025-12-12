@@ -63,6 +63,7 @@ class PostureDetector:
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
         self.shoulder_tilt_threshold = 15  # degrees (use abs value, so catches both directions)
+        self.yaw_threshold = 30  # degrees - ignore roll detection if head rotated beyond this
         
         # Compensation detection settings
         self.compensation_detection_enabled = True
@@ -271,6 +272,37 @@ class PostureDetector:
         
         return (pitch_deg, yaw_deg, roll_deg)
     
+    def calculate_eye_roll_angle(self, landmarks, frame_shape):
+        """Calculate head roll angle directly from eye positions.
+        This is more reliable than Euler angles when head is rotated (yaw).
+        
+        Returns:
+            float: Roll angle in degrees (positive = head tilted right)
+        """
+        height, width = frame_shape[:2]
+        
+        # Use eye corner landmarks for more stable roll calculation
+        left_eye_idx = 33   # Left eye outer corner
+        right_eye_idx = 263  # Right eye outer corner
+        
+        left_eye = landmarks[left_eye_idx]
+        right_eye = landmarks[right_eye_idx]
+        
+        # Convert to pixel coordinates
+        left_x = left_eye.x * width
+        left_y = left_eye.y * height
+        right_x = right_eye.x * width
+        right_y = right_eye.y * height
+        
+        # Calculate angle of line between eyes relative to horizontal
+        delta_y = right_y - left_y
+        delta_x = right_x - left_x
+        
+        # Angle in degrees (positive = right eye lower = head tilted right)
+        roll_angle = np.degrees(np.arctan2(delta_y, delta_x))
+        
+        return roll_angle
+    
     def calculate_distance(self, landmarks, frame_shape):
         """Calculate head-to-camera distance using interpupillary distance (IPD) method."""
         height, width = frame_shape[:2]
@@ -370,6 +402,9 @@ class PostureDetector:
         pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
         distance = self.calculate_distance(face_landmarks, frame.shape)
         
+        # Use eye-based roll for baseline (more reliable)
+        eye_roll = self.calculate_eye_roll_angle(face_landmarks, frame.shape)
+        
         # Try to get shoulder tilt
         pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
         shoulder_tilt = None
@@ -378,7 +413,7 @@ class PostureDetector:
         
         if pitch is not None and distance is not None:
             self.good_head_pitch_angle = pitch
-            self.good_head_roll = roll if roll is not None else 0
+            self.good_head_roll = eye_roll if eye_roll is not None else 0
             self.good_head_distance = distance
             self.good_shoulder_tilt = shoulder_tilt if shoulder_tilt is not None else 0
             return True
@@ -423,6 +458,9 @@ class PostureDetector:
         pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
         distance = self.calculate_distance(face_landmarks, frame.shape)
         
+        # Use eye-based roll calculation (more reliable than Euler angles)
+        eye_roll = self.calculate_eye_roll_angle(face_landmarks, frame.shape)
+        
         # Calculate body metrics
         pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
         shoulder_tilt = None
@@ -450,7 +488,7 @@ class PostureDetector:
         
         # Calculate adjusted values relative to baseline
         adjusted_pitch = pitch - self.good_head_pitch_angle
-        adjusted_roll = roll - self.good_head_roll if roll is not None and self.good_head_roll is not None else 0
+        adjusted_roll = eye_roll - self.good_head_roll if eye_roll is not None and self.good_head_roll is not None else 0
         adjusted_shoulder_tilt = shoulder_tilt - self.good_shoulder_tilt if shoulder_tilt is not None and self.good_shoulder_tilt is not None else 0
         
         # Determine if posture is bad
@@ -459,7 +497,8 @@ class PostureDetector:
             adjusted_roll, 
             adjusted_shoulder_tilt,
             distance, 
-            self.good_head_distance
+            self.good_head_distance,
+            yaw  # Pass yaw to check if head is rotated
         )
         
         return {
@@ -478,7 +517,7 @@ class PostureDetector:
             'face_bbox': face_bbox
         }
     
-    def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance):
+    def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance, yaw=None):
         """Determine if current posture is bad based on thresholds.
         
         Returns:
@@ -496,24 +535,29 @@ class PostureDetector:
             if (good_distance - current_distance) > self.distance_threshold:
                 reasons.append('distance')
         
-        # Check for compensation pattern FIRST (before individual checks)
-        is_compensating, compensation_desc = self._detect_compensation(
-            adjusted_roll, adjusted_shoulder_tilt
-        )
+        # Only check roll/tilt if head is not rotated significantly
+        # This prevents false positives when user is looking left/right
+        head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
-        if is_compensating:
-            reasons.append('body_compensation')
-            # Store compensation description for warning message
-            self._last_compensation_desc = compensation_desc
-        else:
-            # Only check individual thresholds if no compensation detected
-            # Check head roll (head tilted sideways)
-            if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
-                reasons.append('head_roll')
+        if head_is_facing_forward:
+            # Check for compensation pattern FIRST (before individual checks)
+            is_compensating, compensation_desc = self._detect_compensation(
+                adjusted_roll, adjusted_shoulder_tilt
+            )
             
-            # Check shoulder tilt (body tilted sideways)
-            if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
-                reasons.append('shoulder_tilt')
+            if is_compensating:
+                reasons.append('body_compensation')
+                # Store compensation description for warning message
+                self._last_compensation_desc = compensation_desc
+            else:
+                # Only check individual thresholds if no compensation detected
+                # Check head roll (head tilted sideways)
+                if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
+                    reasons.append('head_roll')
+                
+                # Check shoulder tilt (body tilted sideways)
+                if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
+                    reasons.append('shoulder_tilt')
         
         is_bad = len(reasons) > 0
         return is_bad, reasons
