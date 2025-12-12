@@ -45,18 +45,18 @@
                     </Grid.ColumnDefinitions>
                     
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock Text="✨ NeatBack" FontSize="24" FontWeight="Bold" Foreground="White" />
+                        <Image Source="ms-appx:///Assets/app-logo.png" Width="70" Height="70" Stretch="Uniform" />
                         <TextBlock Text="AI Posture Guardian" FontSize="14" Foreground="White" Opacity="0.8" VerticalAlignment="Center" />
                     </StackPanel>
                     
-                    <Button x:Name="StartButton"
+                        <Button x:Name="StartButton"
                             Grid.Column="2"
                             Content="▶ Start"
                             Click="StartButton_Click"
                             Padding="16,8"
                             Margin="0,0,8,0"
-                            Background="White"
-                            Foreground="{StaticResource PrimaryBrush}"
+                            Background="{StaticResource PrimaryBrush}"
+                            Foreground="White"
                             CornerRadius="8"
                             FontWeight="SemiBold" />
                     
