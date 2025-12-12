@@ -24,451 +24,308 @@
     </Page.Resources>
     
     <Page.Content>
-        <ScrollViewer>
-            <Grid x:Name="MainContent" Padding="32" Opacity="1">
-                <StackPanel
-                    Spacing="24"
-                    MaxWidth="800">
+        <Grid x:Name="MainContent" Padding="24,16" Opacity="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            
+            <!-- Compact Header -->
+            <Border Grid.Row="0" 
+                    CornerRadius="16" 
+                    Background="{StaticResource PrimaryGradient}"
+                    Padding="20,12"
+                    Margin="0,0,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     
-                    <!-- Modern Header with Gradient -->
-                    <Border CornerRadius="20" 
-                            Background="{StaticResource PrimaryGradient}"
-                            Padding="32,40"
-                            BorderBrush="#E5E7EB"
-                            BorderThickness="1">
-                        <StackPanel Spacing="12">
-                            <TextBlock
-                                Text="✨ NeatBack"
-                                FontSize="40"
-                                FontWeight="Bold"
-                                Foreground="White" />
-                            <TextBlock
-                                Text="Your AI-Powered Posture Guardian"
-                                FontSize="18"
-                                Foreground="White"
-                                Opacity="0.9" />
-                        </StackPanel>
-                    </Border>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock Text="✨ NeatBack" FontSize="24" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="AI Posture Guardian" FontSize="14" Foreground="White" Opacity="0.8" VerticalAlignment="Center" />
+                    </StackPanel>
                     
-                    <!-- Control Buttons - Modern Style -->
-                    <Grid ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        
-                        <Button
-                            x:Name="StartButton"
-                            Grid.Column="0"
-                            Content="▶ Start Monitoring"
+                    <Button x:Name="StartButton"
+                            Grid.Column="2"
+                            Content="▶ Start"
                             Click="StartButton_Click"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource ModernButton}" />
-                        
-                        <Button
-                            x:Name="SavePostureButton"
-                            Grid.Column="1"
-                            Content="💾 Save Good Posture"
+                            Padding="16,8"
+                            Margin="0,0,8,0"
+                            Background="White"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            CornerRadius="8"
+                            FontWeight="SemiBold" />
+                    
+                    <Button x:Name="SavePostureButton"
+                            Grid.Column="3"
+                            Content="💾 Save Posture"
                             Click="SavePostureButton_Click"
                             IsEnabled="False"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource SecondaryButton}" />
-                    </Grid>
+                            Padding="16,8"
+                            Background="Transparent"
+                            Foreground="White"
+                            BorderBrush="White"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontWeight="SemiBold" />
+                </Grid>
+            </Border>
+            
+            <!-- Main Two-Column Layout -->
+            <Grid Grid.Row="1" ColumnSpacing="16" RowSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="400" />
+                    <ColumnDefinition Width="380" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- Left Column: Camera + Status -->
+                <Grid Grid.Column="0" RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     
-                    <!-- Webcam Preview - Modern Card -->
-                    <Border
-                        CornerRadius="16"
-                        Padding="24"
-                        Background="{StaticResource CardSurfaceBrush}"
-                        BorderBrush="#E5E7EB"
-                        BorderThickness="1">
-                        <StackPanel Spacing="16">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE714;" 
-                                         FontSize="20" 
-                                         Foreground="{StaticResource PrimaryBrush}" />
-                                <TextBlock
-                                    Text="Live Camera Feed"
-                                    Style="{StaticResource SectionTitle}" />
+                    <!-- Camera Feed -->
+                    <Border Grid.Row="0"
+                            CornerRadius="16"
+                            Background="{StaticResource CardSurfaceBrush}"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1"
+                            Padding="16">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+                                <FontIcon Glyph="&#xE714;" FontSize="18" Foreground="{StaticResource PrimaryBrush}" />
+                                <TextBlock Text="Live Camera Feed" FontSize="16" FontWeight="SemiBold" Foreground="#1F2937" />
                             </StackPanel>
                             
-                            <Border
-                                BorderBrush="{StaticResource PrimaryBrush}"
-                                BorderThickness="2"
-                                CornerRadius="12"
-                                Height="400"
-                                Background="#000000">
-                                <Image
-                                    x:Name="CameraPreview"
-                                    Stretch="Uniform" />
+                            <Border Grid.Row="1"
+                                    BorderBrush="{StaticResource PrimaryBrush}"
+                                    BorderThickness="2"
+                                    CornerRadius="12"
+                                    Background="#000000">
+                                <Image x:Name="CameraPreview" Stretch="Uniform" />
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </Border>
                     
-                    <!-- Status Section - Modern Card -->
-                    <Border
-                        CornerRadius="16"
-                        Padding="24"
-                        Background="{StaticResource CardSurfaceBrush}"
-                        BorderBrush="#E5E7EB"
-                        BorderThickness="1">
-                        <StackPanel Spacing="16">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8F4;" 
-                                         FontSize="20" 
-                                         Foreground="{StaticResource PrimaryBrush}" />
-                                <TextBlock
-                                    Text="Status"
-                                    Style="{StaticResource SectionTitle}" />
+                    <!-- Status Bar -->
+                    <Border Grid.Row="1"
+                            CornerRadius="12"
+                            Background="{StaticResource CardSurfaceBrush}"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1"
+                            Padding="16,12">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8F4;" FontSize="16" Foreground="{StaticResource PrimaryBrush}" />
+                                <TextBlock Text="Status:" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Center" />
                             </StackPanel>
                             
-                            <Border Background="#F3F4F6" 
-                                   CornerRadius="12" 
-                                   Padding="20,16">
-                                <TextBlock
-                                    x:Name="StatusText"
-                                    Text="Not monitoring"
-                                    FontSize="16"
-                                    FontWeight="Medium"
-                                    TextWrapping="Wrap"
-                                    Foreground="#374151" />
-                            </Border>
+                            <TextBlock Grid.Column="1"
+                                       x:Name="StatusText"
+                                       Text="Not monitoring"
+                                       FontSize="14"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#6B7280"
+                                       VerticalAlignment="Center" />
                             
-                            <ProgressBar
-                                x:Name="BadPostureProgress"
-                                Maximum="30"
-                                Value="0"
-                                Height="8"
-                                CornerRadius="4"
-                                Foreground="{StaticResource WarningBrush}"
-                                Visibility="Collapsed" />
-                        </StackPanel>
+                            <ProgressBar Grid.Column="2"
+                                         x:Name="BadPostureProgress"
+                                         Maximum="30"
+                                         Value="0"
+                                         Width="120"
+                                         Height="6"
+                                         CornerRadius="3"
+                                         Foreground="{StaticResource WarningBrush}"
+                                         Visibility="Collapsed" />
+                        </Grid>
                     </Border>
-                    
-                    <!-- Posture Metrics - Modern Cards Grid -->
-                    <Border
-                        CornerRadius="16"
-                        Padding="24"
-                        Background="{StaticResource CardSurfaceBrush}"
-                        BorderBrush="#E5E7EB"
-                        BorderThickness="1">
-                        <StackPanel Spacing="20">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE9D9;" 
-                                         FontSize="20" 
-                                         Foreground="{StaticResource PrimaryBrush}" />
-                                <TextBlock
-                                    Text="Posture Metrics"
-                                    Style="{StaticResource SectionTitle}" />
-                            </StackPanel>
-                            
-                            <Grid RowSpacing="16" ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                
-                                <!-- Head Pitch Metric Card -->
-                                <Border Grid.Row="0" Grid.Column="0" 
-                                       Background="#EEF2FF" 
-                                       CornerRadius="12" 
-                                       Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="📐 Head Pitch" Style="{StaticResource MetricLabel}" />
-                                        <TextBlock x:Name="PitchText" Text="--°" Style="{StaticResource MetricValue}" />
-                                    </StackPanel>
-                                </Border>
-                                
-                                <!-- Head Roll Metric Card -->
-                                <Border Grid.Row="0" Grid.Column="1" 
-                                       Background="#F0FDF4" 
-                                       CornerRadius="12" 
-                                       Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="🔄 Head Roll" Style="{StaticResource MetricLabel}" />
-                                        <TextBlock x:Name="RollText" Text="--°" Style="{StaticResource MetricValue}" />
-                                    </StackPanel>
-                                </Border>
-                                
-                                <!-- Shoulder Tilt Metric Card -->
-                                <Border Grid.Row="1" Grid.Column="0" 
-                                       Background="#FEF3C7" 
-                                       CornerRadius="12" 
-                                       Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="💪 Shoulder Tilt" Style="{StaticResource MetricLabel}" />
-                                        <TextBlock x:Name="ShoulderTiltText" Text="--°" Style="{StaticResource MetricValue}" />
-                                    </StackPanel>
-                                </Border>
-                                
-                                <!-- Distance Metric Card -->
-                                <Border Grid.Row="1" Grid.Column="1" 
-                                       Background="#DBEAFE" 
-                                       CornerRadius="12" 
-                                       Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="📏 Distance" Style="{StaticResource MetricLabel}" />
-                                        <TextBlock x:Name="DistanceText" Text="-- cm" Style="{StaticResource MetricValue}" />
-                                    </StackPanel>
-                                </Border>
-                                
-                                <!-- Bad Duration Metric Card -->
-                                <Border Grid.Row="2" Grid.Column="0" 
-                                       Background="#FEE2E2" 
-                                       CornerRadius="12" 
-                                       Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="⏱️ Bad Duration" Style="{StaticResource MetricLabel}" />
-                                        <TextBlock x:Name="BadDurationText" Text="0 s" Style="{StaticResource MetricValue}" />
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Threshold Settings - Modern Card -->
-                    <Border
-                        CornerRadius="16"
-                        Padding="24"
-                        Background="{StaticResource CardSurfaceBrush}"
-                        BorderBrush="#E5E7EB"
-                        BorderThickness="1">
-                        <StackPanel Spacing="20">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE115;" 
-                                         FontSize="20" 
-                                         Foreground="{StaticResource PrimaryBrush}" />
-                                <TextBlock
-                                    Text="Sensitivity Settings"
-                                    Style="{StaticResource SectionTitle}" />
-                            </StackPanel>
-                            
-                            <!-- Pitch Threshold -->
+                </Grid>
+                
+                <!-- Right Column: Metrics + Settings -->
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12">
+                        
+                        <!-- Posture Metrics - Compact Grid -->
+                        <Border CornerRadius="14"
+                                Background="{StaticResource CardSurfaceBrush}"
+                                BorderBrush="#E5E7EB"
+                                BorderThickness="1"
+                                Padding="16">
                             <StackPanel Spacing="12">
-                                <Grid>
-                                    <TextBlock Text="📐 Pitch Threshold" 
-                                             FontWeight="Medium" 
-                                             Foreground="#374151" />
-                                    <TextBlock x:Name="PitchThresholdValue" 
-                                             Text="-10°" 
-                                             HorizontalAlignment="Right"
-                                             FontWeight="SemiBold"
-                                             Foreground="{StaticResource PrimaryBrush}" />
-                                </Grid>
-                                <Slider
-                                    x:Name="PitchThresholdSlider"
-                                    Minimum="-30"
-                                    Maximum="0"
-                                    Value="-10"
-                                    StepFrequency="1"
-                                    ValueChanged="ThresholdSlider_ValueChanged" />
-                            </StackPanel>
-                            
-                            <!-- Distance Threshold -->
-                            <StackPanel Spacing="12">
-                                <Grid>
-                                    <TextBlock Text="📏 Distance Threshold" 
-                                             FontWeight="Medium" 
-                                             Foreground="#374151" />
-                                    <TextBlock x:Name="DistanceThresholdValue" 
-                                             Text="10 cm" 
-                                             HorizontalAlignment="Right"
-                                             FontWeight="SemiBold"
-                                             Foreground="{StaticResource PrimaryBrush}" />
-                                </Grid>
-                                <Slider
-                                    x:Name="DistanceThresholdSlider"
-                                    Minimum="5"
-                                    Maximum="20"
-                                    Value="10"
-                                    StepFrequency="1"
-                                    ValueChanged="ThresholdSlider_ValueChanged" />
-                            </StackPanel>
-                            
-                            <!-- Head Roll Threshold -->
-                            <StackPanel Spacing="12">
-                                <Grid>
-                                    <TextBlock Text="🔄 Head Roll Threshold" 
-                                             FontWeight="Medium" 
-                                             Foreground="#374151" />
-                                    <TextBlock x:Name="HeadRollThresholdValue" 
-                                             Text="15°" 
-                                             HorizontalAlignment="Right"
-                                             FontWeight="SemiBold"
-                                             Foreground="{StaticResource PrimaryBrush}" />
-                                </Grid>
-                                <Slider
-                                    x:Name="HeadRollThresholdSlider"
-                                    Minimum="5"
-                                    Maximum="30"
-                                    Value="15"
-                                    StepFrequency="1"
-                                    ValueChanged="ThresholdSlider_ValueChanged" />
-                            </StackPanel>
-                            
-                            <!-- Shoulder Tilt Threshold -->
-                            <StackPanel Spacing="12">
-                                <Grid>
-                                    <TextBlock Text="💪 Shoulder Tilt Threshold" 
-                                             FontWeight="Medium" 
-                                             Foreground="#374151" />
-                                    <TextBlock x:Name="ShoulderTiltThresholdValue" 
-                                             Text="10°" 
-                                             HorizontalAlignment="Right"
-                                             FontWeight="SemiBold"
-                                             Foreground="{StaticResource PrimaryBrush}" />
-                                </Grid>
-                                <Slider
-                                    x:Name="ShoulderTiltThresholdSlider"
-                                    Minimum="5"
-                                    Maximum="20"
-                                    Value="10"
-                                    StepFrequency="1"
-                                    ValueChanged="ThresholdSlider_ValueChanged" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Instructions - Modern Info Card -->
-                    <Border
-                        CornerRadius="16"
-                        Padding="24"
-                        Background="{StaticResource SuccessGradient}">
-                        <StackPanel Spacing="16">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE82F;" 
-                                         FontSize="24" 
-                                         Foreground="White" />
-                                <TextBlock
-                                    Text="Quick Start Guide"
-                                    FontSize="20"
-                                    FontWeight="Bold"
-                                    Foreground="White" />
-                            </StackPanel>
-                            
-                            <StackPanel Spacing="12">
-                                <Border Background="#FFFFFF" 
-                                       Opacity="0.15" 
-                                       Height="1" />
-                                
-                                <StackPanel Spacing="12">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <Border Grid.Column="0" 
-                                               Background="White" 
-                                               CornerRadius="20" 
-                                               Width="32" Height="32"
-                                               Margin="0,0,12,0">
-                                            <TextBlock Text="1" 
-                                                     Foreground="{StaticResource SuccessBrush}"
-                                                     FontWeight="Bold"
-                                                     FontSize="16"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Grid.Column="1"
-                                                 Text="Click 'Start Monitoring' to begin tracking"
-                                                 Foreground="White"
-                                                 FontSize="15"
-                                                 TextWrapping="Wrap"
-                                                 VerticalAlignment="Center" />
-                                    </Grid>
-                                    
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <Border Grid.Column="0" 
-                                               Background="White" 
-                                               CornerRadius="20" 
-                                               Width="32" Height="32"
-                                               Margin="0,0,12,0">
-                                            <TextBlock Text="2" 
-                                                     Foreground="{StaticResource SuccessBrush}"
-                                                     FontWeight="Bold"
-                                                     FontSize="16"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Grid.Column="1"
-                                                 Text="Adjust your posture to your ideal position"
-                                                 Foreground="White"
-                                                 FontSize="15"
-                                                 TextWrapping="Wrap"
-                                                 VerticalAlignment="Center" />
-                                    </Grid>
-                                    
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <Border Grid.Column="0" 
-                                               Background="White" 
-                                               CornerRadius="20" 
-                                               Width="32" Height="32"
-                                               Margin="0,0,12,0">
-                                            <TextBlock Text="3" 
-                                                     Foreground="{StaticResource SuccessBrush}"
-                                                     FontWeight="Bold"
-                                                     FontSize="16"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Grid.Column="1"
-                                                 Text="Save your good posture as the baseline"
-                                                 Foreground="White"
-                                                 FontSize="15"
-                                                 TextWrapping="Wrap"
-                                                 VerticalAlignment="Center" />
-                                    </Grid>
-                                    
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <Border Grid.Column="0" 
-                                               Background="White" 
-                                               CornerRadius="20" 
-                                               Width="32" Height="32"
-                                               Margin="0,0,12,0">
-                                            <TextBlock Text="4" 
-                                                     Foreground="{StaticResource SuccessBrush}"
-                                                     FontWeight="Bold"
-                                                     FontSize="16"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Grid.Column="1"
-                                                 Text="Receive notifications when posture degrades"
-                                                 Foreground="White"
-                                                 FontSize="15"
-                                                 TextWrapping="Wrap"
-                                                 VerticalAlignment="Center" />
-                                    </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE9D9;" FontSize="16" Foreground="{StaticResource PrimaryBrush}" />
+                                    <TextBlock Text="Posture Metrics" FontSize="15" FontWeight="SemiBold" Foreground="#1F2937" />
                                 </StackPanel>
+                                
+                                <Grid RowSpacing="8" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    
+                                    <!-- Head Pitch -->
+                                    <Border Grid.Row="0" Grid.Column="0" Background="#EEF2FF" CornerRadius="10" Padding="10">
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="📐 Pitch" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="PitchText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Head Roll -->
+                                    <Border Grid.Row="0" Grid.Column="1" Background="#F0FDF4" CornerRadius="10" Padding="10">
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="🔄 Roll" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="RollText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Shoulder Tilt -->
+                                    <Border Grid.Row="0" Grid.Column="2" Background="#FEF3C7" CornerRadius="10" Padding="10">
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="💪 Shoulder" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="ShoulderTiltText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Distance -->
+                                    <Border Grid.Row="1" Grid.Column="0" Background="#DBEAFE" CornerRadius="10" Padding="10">
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="📏 Distance" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="DistanceText" Text="--" FontSize="20" FontWeight="Bold" Foreground="#3B82F6" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- Bad Duration -->
+                                    <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Background="#FEE2E2" CornerRadius="10" Padding="10">
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="⏱️ Bad Posture Duration" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="BadDurationText" Text="0 s" FontSize="20" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Footer Spacing -->
-                    <Border Height="32" />
-                </StackPanel>
+                        </Border>
+                        
+                        <!-- Sensitivity Settings - Expander -->
+                        <controls:Expander 
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            ExpandDirection="Down"
+                            IsExpanded="False">
+                            <controls:Expander.Header>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE115;" FontSize="16" Foreground="{StaticResource PrimaryBrush}" />
+                                    <TextBlock Text="Sensitivity Settings" FontSize="15" FontWeight="SemiBold" Foreground="#1F2937" />
+                                </StackPanel>
+                            </controls:Expander.Header>
+                            <controls:Expander.Content>
+                                <StackPanel Spacing="16" Margin="0,8,0,0">
+                                    <!-- Pitch Threshold -->
+                                    <StackPanel Spacing="4">
+                                        <Grid>
+                                            <TextBlock Text="📐 Pitch" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="PitchThresholdValue" Text="-10°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                        </Grid>
+                                        <Slider x:Name="PitchThresholdSlider" Minimum="-30" Maximum="0" Value="-10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                    </StackPanel>
+                                    
+                                    <!-- Distance Threshold -->
+                                    <StackPanel Spacing="4">
+                                        <Grid>
+                                            <TextBlock Text="📏 Distance" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="DistanceThresholdValue" Text="10 cm" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                        </Grid>
+                                        <Slider x:Name="DistanceThresholdSlider" Minimum="5" Maximum="20" Value="10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                    </StackPanel>
+                                    
+                                    <!-- Head Roll Threshold -->
+                                    <StackPanel Spacing="4">
+                                        <Grid>
+                                            <TextBlock Text="🔄 Head Roll" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="HeadRollThresholdValue" Text="15°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                        </Grid>
+                                        <Slider x:Name="HeadRollThresholdSlider" Minimum="5" Maximum="30" Value="15" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                    </StackPanel>
+                                    
+                                    <!-- Shoulder Tilt Threshold -->
+                                    <StackPanel Spacing="4">
+                                        <Grid>
+                                            <TextBlock Text="💪 Shoulder Tilt" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="ShoulderTiltThresholdValue" Text="10°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                        </Grid>
+                                        <Slider x:Name="ShoulderTiltThresholdSlider" Minimum="5" Maximum="20" Value="10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </controls:Expander.Content>
+                        </controls:Expander>
+                        
+                        <!-- Quick Start Guide - Compact Expander -->
+                        <controls:Expander 
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            ExpandDirection="Down"
+                            IsExpanded="False">
+                            <controls:Expander.Header>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE82F;" FontSize="16" Foreground="{StaticResource SuccessBrush}" />
+                                    <TextBlock Text="Quick Start Guide" FontSize="15" FontWeight="SemiBold" Foreground="#1F2937" />
+                                </StackPanel>
+                            </controls:Expander.Header>
+                            <controls:Expander.Content>
+                                <StackPanel Spacing="8" Margin="0,8,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Width="24" Height="24">
+                                            <TextBlock Text="1" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Click 'Start' to begin monitoring" FontSize="13" Foreground="#374151" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Width="24" Height="24">
+                                            <TextBlock Text="2" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Sit in your ideal posture" FontSize="13" Foreground="#374151" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Width="24" Height="24">
+                                            <TextBlock Text="3" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Save as baseline reference" FontSize="13" Foreground="#374151" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Width="24" Height="24">
+                                            <TextBlock Text="4" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Get notified when posture degrades" FontSize="13" Foreground="#374151" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </controls:Expander.Content>
+                        </controls:Expander>
+                        
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
-        </ScrollViewer>
+        </Grid>
     </Page.Content>
 </Page>
