@@ -67,7 +67,7 @@ class PostureDetector:
         
         # Compensation detection settings
         self.compensation_detection_enabled = True
-        self.min_tilt_for_compensation = 5  # degrees
+        self.min_tilt_for_compensation = 2  # degrees
         self.compensation_ratio_threshold = 0.7  # 70% match indicates compensation
         
         # Track last compensation description for messaging
