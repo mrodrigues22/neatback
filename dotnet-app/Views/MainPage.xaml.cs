@@ -20,6 +20,15 @@ public sealed partial class MainPage : Page
     private bool _isMonitoring = false;
     private Image? _cameraPreview;
     private Border? _cameraBorder;
+    private Microsoft.UI.Xaml.Media.Animation.Storyboard? _pulseAnimation;
+    private Microsoft.UI.Xaml.Media.Animation.Storyboard? _spinAnimation;
+    private FontIcon? _statusIcon;
+    private Border? _pitchCard;
+    private Border? _rollCard;
+    private Border? _shoulderCard;
+    private Border? _distanceCard;
+    private Border? _badDurationCard;
+    private string _currentPostureStatus = "neutral";
     // Local references bound via FindName to avoid reliance on generated fields
     private TextBlock? _statusText;
     private ProgressBar? _badPostureProgress;
@@ -48,6 +57,14 @@ public sealed partial class MainPage : Page
         // Bind local references to XAML controls
         _cameraPreview = FindName("CameraPreview") as Image;
         _cameraBorder = FindName("CameraBorder") as Border;
+        _pulseAnimation = FindName("PulseAnimation") as Microsoft.UI.Xaml.Media.Animation.Storyboard;
+        _spinAnimation = FindName("SpinAnimation") as Microsoft.UI.Xaml.Media.Animation.Storyboard;
+        _statusIcon = FindName("StatusIcon") as FontIcon;
+        _pitchCard = FindName("PitchCard") as Border;
+        _rollCard = FindName("RollCard") as Border;
+        _shoulderCard = FindName("ShoulderCard") as Border;
+        _distanceCard = FindName("DistanceCard") as Border;
+        _badDurationCard = FindName("BadDurationCard") as Border;
         _statusText = FindName("StatusText") as TextBlock;
         _badPostureProgress = FindName("BadPostureProgress") as ProgressBar;
         _pitchText = FindName("PitchText") as TextBlock;
@@ -207,7 +224,7 @@ public sealed partial class MainPage : Page
             if (!string.IsNullOrEmpty(data.Error))
             {
                 if (_statusText != null) _statusText.Text = data.Error;
-                UpdateCameraBorderColor("neutral");
+                UpdatePostureVisuals("neutral");
             }
             else if (data.IsBad)
             {
@@ -218,7 +235,10 @@ public sealed partial class MainPage : Page
                     _badPostureProgress.Value = Math.Min(data.BadDuration, 30);
                 }
                 // Change border to yellow if bad but not warning yet, red if warning
-                UpdateCameraBorderColor(data.ShouldWarn ? "bad" : "warning");
+                UpdatePostureVisuals(data.ShouldWarn ? "bad" : "warning");
+                
+                // Highlight problematic metrics
+                HighlightProblematicMetrics(data);
             }
             else
             {
@@ -228,7 +248,8 @@ public sealed partial class MainPage : Page
                     _badPostureProgress.Visibility = Visibility.Collapsed;
                     _badPostureProgress.Value = 0;
                 }
-                UpdateCameraBorderColor("good");
+                UpdatePostureVisuals("good");
+                ResetMetricHighlights();
             }
             
             // Send notification if needed
@@ -254,10 +275,11 @@ public sealed partial class MainPage : Page
         });
     }
     
-    private void UpdateCameraBorderColor(string status)
+    private void UpdatePostureVisuals(string status)
     {
         if (_cameraBorder == null) return;
         
+        // Update border color
         var brush = status switch
         {
             "good" => (Microsoft.UI.Xaml.Media.Brush)this.Resources["GoodPostureBrush"],
@@ -265,8 +287,121 @@ public sealed partial class MainPage : Page
             "bad" => (Microsoft.UI.Xaml.Media.Brush)this.Resources["BadPostureBrush"],
             _ => (Microsoft.UI.Xaml.Media.Brush)this.Resources["NeutralPostureBrush"]
         };
-        
         _cameraBorder.BorderBrush = brush;
+        
+        // Control pulse animation
+        if (status == "bad" && _currentPostureStatus != "bad")
+        {
+            _pulseAnimation?.Begin();
+        }
+        else if (status != "bad" && _currentPostureStatus == "bad")
+        {
+            _pulseAnimation?.Stop();
+            if (_cameraBorder != null) _cameraBorder.Opacity = 1.0;
+        }
+        
+        // Update status icon and animation
+        if (_statusIcon != null)
+        {
+            _statusIcon.Glyph = status switch
+            {
+                "good" => "\uE73E",  // Checkmark circle
+                "warning" => "\uE7BA",  // Warning
+                "bad" => "\uE711",  // Error
+                _ => "\uE8F4"  // Info
+            };
+            
+            // Spin icon when processing
+            if (status == "warning" || status == "bad")
+            {
+                if (_currentPostureStatus != status)
+                {
+                    AnimateCardPop(_badDurationCard);
+                }
+            }
+        }
+        
+        _currentPostureStatus = status;
+    }
+    
+    private void HighlightProblematicMetrics(PostureData data)
+    {
+        // Highlight cards for metrics that are problematic
+        var issues = data.PostureIssues ?? new List<string>();
+        
+        foreach (var issue in issues)
+        {
+            if (issue.Contains("pitch", StringComparison.OrdinalIgnoreCase) || issue.Contains("forward", StringComparison.OrdinalIgnoreCase))
+            {
+                AnimateCardPop(_pitchCard);
+            }
+            if (issue.Contains("roll", StringComparison.OrdinalIgnoreCase) || issue.Contains("tilting", StringComparison.OrdinalIgnoreCase))
+            {
+                AnimateCardPop(_rollCard);
+            }
+            if (issue.Contains("shoulder", StringComparison.OrdinalIgnoreCase))
+            {
+                AnimateCardPop(_shoulderCard);
+            }
+            if (issue.Contains("distance", StringComparison.OrdinalIgnoreCase) || issue.Contains("close", StringComparison.OrdinalIgnoreCase))
+            {
+                AnimateCardPop(_distanceCard);
+            }
+        }
+    }
+    
+    private void ResetMetricHighlights()
+    {
+        // Reset all card scales to normal
+        ResetCardScale(_pitchCard);
+        ResetCardScale(_rollCard);
+        ResetCardScale(_shoulderCard);
+        ResetCardScale(_distanceCard);
+    }
+    
+    private void AnimateCardPop(Border? card)
+    {
+        if (card == null) return;
+        
+        var scaleTransform = new Microsoft.UI.Xaml.Media.ScaleTransform
+        {
+            CenterX = card.ActualWidth / 2,
+            CenterY = card.ActualHeight / 2
+        };
+        card.RenderTransform = scaleTransform;
+        
+        var storyboard = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+        var scaleXAnim = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+        {
+            From = 1.0,
+            To = 1.08,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
+            AutoReverse = true,
+            EasingFunction = new Microsoft.UI.Xaml.Media.Animation.BackEase { EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+        };
+        var scaleYAnim = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+        {
+            From = 1.0,
+            To = 1.08,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
+            AutoReverse = true,
+            EasingFunction = new Microsoft.UI.Xaml.Media.Animation.BackEase { EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+        };
+        
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleXAnim, scaleTransform);
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleXAnim, "ScaleX");
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleYAnim, scaleTransform);
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleYAnim, "ScaleY");
+        
+        storyboard.Children.Add(scaleXAnim);
+        storyboard.Children.Add(scaleYAnim);
+        storyboard.Begin();
+    }
+    
+    private void ResetCardScale(Border? card)
+    {
+        if (card == null) return;
+        card.RenderTransform = null;
     }
     
     private void OnThresholdsUpdated(object? sender, bool success)

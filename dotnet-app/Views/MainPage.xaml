@@ -27,6 +27,24 @@
         <SolidColorBrush x:Key="WarningPostureBrush" Color="#F59E0B"/>  <!-- Amber/Yellow -->
         <SolidColorBrush x:Key="BadPostureBrush" Color="#EF4444"/>  <!-- Red -->
         <SolidColorBrush x:Key="NeutralPostureBrush" Color="#6B7280"/>  <!-- Gray -->
+        
+        <!-- Pulsing Animation for Bad Posture -->
+        <Storyboard x:Name="PulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="CameraBorder"
+                           Storyboard.TargetProperty="Opacity"
+                           From="1.0" To="0.6" Duration="0:0:0.8">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        
+        <!-- Status Icon Rotation Animation -->
+        <Storyboard x:Name="SpinAnimation" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="StatusIconRotate"
+                           Storyboard.TargetProperty="Angle"
+                           From="0" To="360" Duration="0:0:2" />
+        </Storyboard>
     </Page.Resources>
     
     <Page.Content>
@@ -134,6 +152,9 @@
                                     BorderThickness="3"
                                     CornerRadius="12"
                                     Background="#000000">
+                                <Border.Shadow>
+                                    <ThemeShadow />
+                                </Border.Shadow>
                                 <Image x:Name="CameraPreview" Stretch="Uniform" />
                             </Border>
                         </Grid>
@@ -154,7 +175,11 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8F4;" FontSize="16" Foreground="{StaticResource PrimaryBrush}" />
+                                <FontIcon x:Name="StatusIcon" Glyph="&#xE8F4;" FontSize="16" Foreground="{StaticResource PrimaryBrush}">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform x:Name="StatusIconRotate" CenterX="8" CenterY="8" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
                                 <TextBlock Text="Status:" FontWeight="SemiBold" Foreground="#374151" VerticalAlignment="Center" />
                             </StackPanel>
                             
@@ -208,7 +233,10 @@
                                     </Grid.RowDefinitions>
                                     
                                     <!-- Head Pitch -->
-                                    <Border Grid.Row="0" Grid.Column="0" Background="#EEF2FF" CornerRadius="10" Padding="10">
+                                    <Border x:Name="PitchCard" Grid.Row="0" Grid.Column="0" Background="#EEF2FF" CornerRadius="10" Padding="10">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="📐 Pitch" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
                                             <TextBlock x:Name="PitchText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center" />
@@ -216,7 +244,10 @@
                                     </Border>
                                     
                                     <!-- Head Roll -->
-                                    <Border Grid.Row="0" Grid.Column="1" Background="#F0FDF4" CornerRadius="10" Padding="10">
+                                    <Border x:Name="RollCard" Grid.Row="0" Grid.Column="1" Background="#F0FDF4" CornerRadius="10" Padding="10">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="🔄 Roll" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
                                             <TextBlock x:Name="RollText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" />
@@ -224,7 +255,10 @@
                                     </Border>
                                     
                                     <!-- Shoulder Tilt -->
-                                    <Border Grid.Row="0" Grid.Column="2" Background="#FEF3C7" CornerRadius="10" Padding="10">
+                                    <Border x:Name="ShoulderCard" Grid.Row="0" Grid.Column="2" Background="#FEF3C7" CornerRadius="10" Padding="10">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="💪 Shoulder" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
                                             <TextBlock x:Name="ShoulderTiltText" Text="--°" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarningBrush}" HorizontalAlignment="Center" />
@@ -232,7 +266,10 @@
                                     </Border>
                                     
                                     <!-- Distance -->
-                                    <Border Grid.Row="1" Grid.Column="0" Background="#DBEAFE" CornerRadius="10" Padding="10">
+                                    <Border x:Name="DistanceCard" Grid.Row="1" Grid.Column="0" Background="#DBEAFE" CornerRadius="10" Padding="10">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="📏 Distance" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
                                             <TextBlock x:Name="DistanceText" Text="--" FontSize="20" FontWeight="Bold" Foreground="#3B82F6" HorizontalAlignment="Center" />
@@ -240,7 +277,10 @@
                                     </Border>
                                     
                                     <!-- Bad Duration -->
-                                    <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Background="#FEE2E2" CornerRadius="10" Padding="10">
+                                    <Border x:Name="BadDurationCard" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Background="#FEE2E2" CornerRadius="10" Padding="10">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="⏱️ Bad Posture Duration" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" />
                                             <TextBlock x:Name="BadDurationText" Text="0 s" FontSize="20" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" HorizontalAlignment="Center" />
