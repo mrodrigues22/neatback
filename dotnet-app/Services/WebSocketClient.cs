@@ -76,7 +76,7 @@ public class WebSocketClient
     {
         try
         {
-            var message = JsonSerializer.Deserialize<WebSocketMessage>(json);
+            var message = JsonSerializer.Deserialize(json, JsonContext.Default.WebSocketMessage);
             if (message == null) return;
             
             switch (message.type)
@@ -120,7 +120,7 @@ public class WebSocketClient
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var message = JsonSerializer.Serialize(new { type = "start_monitoring" });
+        var message = JsonSerializer.Serialize(new StartMonitoringMessage(), JsonContext.Default.StartMonitoringMessage);
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),
@@ -135,7 +135,7 @@ public class WebSocketClient
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var message = JsonSerializer.Serialize(new { type = "stop_monitoring" });
+        var message = JsonSerializer.Serialize(new StopMonitoringMessage(), JsonContext.Default.StopMonitoringMessage);
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),
@@ -150,7 +150,7 @@ public class WebSocketClient
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var message = JsonSerializer.Serialize(new { type = "save_good_posture" });
+        var message = JsonSerializer.Serialize(new SavePostureMessage(), JsonContext.Default.SavePostureMessage);
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),
@@ -165,14 +165,13 @@ public class WebSocketClient
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var message = JsonSerializer.Serialize(new
+        var message = JsonSerializer.Serialize(new SetThresholdsMessage
         {
-            type = "set_thresholds",
             pitch_threshold = pitchThreshold,
             distance_threshold = distanceThreshold,
             head_roll_threshold = headRollThreshold,
             shoulder_tilt_threshold = shoulderTiltThreshold
-        });
+        }, JsonContext.Default.SetThresholdsMessage);
         
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
@@ -188,7 +187,7 @@ public class WebSocketClient
         if (_ws?.State != WebSocketState.Open)
             return;
         
-        var message = JsonSerializer.Serialize(new { type = "get_statistics" });
+        var message = JsonSerializer.Serialize(new GetStatisticsMessage(), JsonContext.Default.GetStatisticsMessage);
         var bytes = Encoding.UTF8.GetBytes(message);
         await _ws.SendAsync(
             new ArraySegment<byte>(bytes),

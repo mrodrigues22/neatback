@@ -143,3 +143,5 @@ dotnet-app/obj/Debug/net8.0-windows10.0.19041.0/refint/Slouti.dll
 Installer/Installer_TemporaryKey.pfx
 Installer_1.0.1.0_Test/Installer_1.0.1.0_x86_x64.cer
 Installer_1.0.1.0_Test/Installer_1.0.1.0_x86_x64.msixbundle
+Installer_1.0.2.0_Test/Installer_1.0.2.0_x86_x64.cer
+Installer_1.0.2.0_Test/Installer_1.0.2.0_x86_x64.msixbundle
