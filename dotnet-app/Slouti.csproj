@@ -67,4 +67,28 @@
     <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
         <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
     </PropertyGroup>
+
+    <!-- Python Service Integration -->
+    <ItemGroup>
+        <PythonServiceFiles Include="..\python-service\dist\slouti-service.exe" />
+    </ItemGroup>
+
+    <Target Name="CopyPythonService" AfterTargets="Build">
+        <Message Text="Copying Python service files to output directory..." Importance="high" />
+        <Copy SourceFiles="@(PythonServiceFiles)" 
+              DestinationFolder="$(OutDir)PythonService" 
+              SkipUnchangedFiles="true" 
+              Condition="Exists('..\python-service\dist\slouti-service.exe')" />
+        <Warning Text="Python service executable not found at ..\python-service\dist\slouti-service.exe - Run PyInstaller to build it first" 
+                 Condition="!Exists('..\python-service\dist\slouti-service.exe')" />
+    </Target>
+
+    <!-- Include Python Service in MSIX package -->
+    <ItemGroup>
+        <Content Include="..\python-service\dist\slouti-service.exe" 
+                 Link="PythonService\slouti-service.exe"
+                 Condition="Exists('..\python-service\dist\slouti-service.exe')">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
 </Project>
