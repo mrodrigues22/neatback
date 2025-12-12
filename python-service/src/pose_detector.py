@@ -99,6 +99,33 @@ class PostureDetector:
         if detection_result.face_landmarks:
             return detection_result.face_landmarks[0]
         return None
+
+    def get_face_bbox(self, landmarks, frame_shape, padding_ratio=0.05):
+        """Compute a face bounding box from landmarks.
+
+        Args:
+            landmarks: list of MediaPipe landmarks for a single face.
+            frame_shape: tuple (height, width, channels) of the frame.
+            padding_ratio: extra padding around bbox as fraction of min(width, height).
+
+        Returns:
+            tuple: (x1, y1, x2, y2) in pixel coordinates, or None if landmarks invalid.
+        """
+        if not landmarks or len(landmarks) == 0:
+            return None
+        height, width = frame_shape[:2]
+        xs = [int(lm.x * width) for lm in landmarks]
+        ys = [int(lm.y * height) for lm in landmarks]
+        x1, x2 = max(min(xs), 0), min(max(xs), width - 1)
+        y1, y2 = max(min(ys), 0), min(max(ys), height - 1)
+
+        # Apply padding
+        pad = int(min(width, height) * padding_ratio)
+        x1 = max(x1 - pad, 0)
+        y1 = max(y1 - pad, 0)
+        x2 = min(x2 + pad, width - 1)
+        y2 = min(y2 + pad, height - 1)
+        return (x1, y1, x2, y2)
     
     def get_2d_landmarks(self, landmarks, frame_shape, indices):
         """Extract 2D coordinates for specific landmark indices."""
@@ -382,6 +409,9 @@ class PostureDetector:
         if pose_landmarks:
             shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
         
+        # Compute face bbox for drawing
+        face_bbox = self.get_face_bbox(face_landmarks, frame.shape)
+
         # If no baseline saved, can't determine bad posture
         if self.good_head_pitch_angle is None:
             return {
@@ -394,6 +424,7 @@ class PostureDetector:
                 'adjusted_roll': None,
                 'adjusted_shoulder_tilt': None,
                 'posture_issues': [],
+                'face_bbox': face_bbox,
                 'error': 'No baseline posture saved'
             }
         
@@ -423,7 +454,8 @@ class PostureDetector:
             'posture_issues': issues,
             'shoulder_detection_active': pose_landmarks is not None,
             'shoulder_detection_confidence': self._get_shoulder_confidence(pose_landmarks),
-            'compensation_description': self._last_compensation_desc
+            'compensation_description': self._last_compensation_desc,
+            'face_bbox': face_bbox
         }
     
     def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance):

@@ -177,6 +177,12 @@ class WebSocketServer:
                 
                 # Analyze posture
                 posture_status = self.detector.check_posture(frame, timestamp_ms)
+
+                # Draw face bounding box on the frame if available
+                bbox = posture_status.get('face_bbox') if posture_status else None
+                if bbox:
+                    x1, y1, x2, y2 = bbox
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 
                 # Update analyzer
                 analysis = self.analyzer.update(posture_status)
