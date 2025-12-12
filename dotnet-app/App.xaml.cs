@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Navigation;
+using System.IO;
 
 namespace NeatBack
 {
@@ -36,6 +37,9 @@ namespace NeatBack
 
             _ = rootFrame.Navigate(typeof(MainPage), e.Arguments);
             window.Activate();
+            
+            // Set window icon
+            window.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets/logo-square.ico"));
         }
 
         /// <summary>
