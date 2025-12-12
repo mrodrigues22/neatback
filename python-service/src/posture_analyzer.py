@@ -13,7 +13,7 @@ class PostureAnalyzer:
         self.good_posture_start = time.time()
         
         # Warning thresholds (in seconds)
-        self.initial_warning_seconds = 5
+        self.initial_warning_seconds = 10
         self.repeat_warning_interval = 20
     
     def _generate_warning_message(self, issues, duration):
@@ -23,7 +23,7 @@ class PostureAnalyzer:
         
         # Special case: If compensation detected, make it primary message
         if 'body_compensation' in issues:
-            return f"⚠️ Bad posture: compensating body tilt with head tilt ({duration}s)"
+            return "⚠️ Bad posture: compensating body tilt with head tilt"
         
         issue_descriptions = {
             'head_pitch': 'head tilted down',
@@ -35,13 +35,13 @@ class PostureAnalyzer:
         messages = [issue_descriptions[issue] for issue in issues if issue in issue_descriptions]
         
         if len(messages) == 0:
-            return f"Bad posture for {duration} seconds"
+            return "Bad posture detected"
         elif len(messages) == 1:
-            return f"Bad posture: {messages[0]} ({duration}s)"
+            return f"Bad posture: {messages[0]}"
         elif len(messages) == 2:
-            return f"Bad posture: {messages[0]} and {messages[1]} ({duration}s)"
+            return f"Bad posture: {messages[0]} and {messages[1]}"
         else:
-            return f"Bad posture: {', '.join(messages[:-1])}, and {messages[-1]} ({duration}s)"
+            return f"Bad posture: {', '.join(messages[:-1])}, and {messages[-1]}"
         
     def update(self, posture_status):
         """

@@ -255,7 +255,11 @@ public sealed partial class MainPage : Page
             // Send notification if needed
             if (data.ShouldWarn && _notificationService != null && !_notificationService.IsMuted)
             {
-                _notificationService.ShowAlert($"Bad posture for {data.BadDuration} seconds! Please adjust.");
+                // Use the detailed message from the Python service
+                string message = !string.IsNullOrEmpty(data.Message) 
+                    ? data.Message 
+                    : $"Bad posture for {data.BadDuration} seconds! Please adjust.";
+                _notificationService.ShowAlert(message);
             }
         });
     }
