@@ -314,7 +314,7 @@ class PostureDetector:
         """Calculate shoulder tilt angle from horizontal.
         
         Returns:
-            float: Angle in degrees (positive = right shoulder higher)
+            float: Angle in degrees (positive = right shoulder higher, negative = left shoulder higher)
         """
         if not pose_landmarks or len(pose_landmarks) < 13:
             return None
@@ -335,8 +335,16 @@ class PostureDetector:
         delta_y = right_y - left_y
         delta_x = right_x - left_x
         
-        # Angle in degrees (0 = level, positive = right shoulder higher)
+        # Angle in degrees using arctan2 (returns -180 to 180)
         angle = np.degrees(np.arctan2(delta_y, delta_x))
+        
+        # Normalize to -90 to 90 range (deviation from horizontal)
+        # If angle is close to 180 or -180, it means shoulders are nearly level but facing left
+        # We want the smallest angle from horizontal (0 or ±180)
+        if angle > 90:
+            angle = angle - 180
+        elif angle < -90:
+            angle = angle + 180
         
         return angle
     
