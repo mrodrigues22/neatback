@@ -59,7 +59,7 @@ class PostureDetector:
         self.good_shoulder_tilt = None
         
         # Configurable thresholds
-        self.pitch_threshold = -10  # degrees (negative = looking down)
+        self.pitch_threshold = -15  # degrees (negative = looking down)
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
         self.shoulder_tilt_threshold = 15  # degrees (use abs value, so catches both directions)
@@ -73,17 +73,18 @@ class PostureDetector:
         self._last_compensation_desc = None
         
         # 3D face model coordinates (in mm)
+        # Using stable landmarks that don't move with facial expressions (smiling, etc.)
         self.face_3d_model = np.array([
             [-165.0, 170.0, -135.0],   # Left eye outer corner (index 33)
             [165.0, 170.0, -135.0],    # Right eye outer corner (index 263)
             [0.0, 0.0, 0.0],           # Nose tip (index 1)
-            [-150.0, -150.0, -125.0],  # Left mouth corner (index 61)
-            [150.0, -150.0, -125.0],   # Right mouth corner (index 291)
-            [0.0, -330.0, -65.0]       # Chin (index 199)
+            [-150.0, 170.0, -125.0],   # Left eye inner corner (index 133)
+            [150.0, 170.0, -125.0],    # Right eye inner corner (index 362)
+            [0.0, 200.0, -80.0]        # Nose bridge/forehead (index 168)
         ], dtype=np.float64)
         
-        # Landmark indices for PnP
-        self.landmark_indices = [33, 263, 1, 61, 291, 199]
+        # Landmark indices for PnP - using stable points that don't move when smiling
+        self.landmark_indices = [33, 263, 1, 133, 362, 168]
         
     def detect_landmarks(self, frame, timestamp_ms):
         """Detect facial landmarks using MediaPipe Face Landmarker."""
@@ -474,8 +475,9 @@ class PostureDetector:
         """
         reasons = []
         
-        # Check pitch (looking down) - use abs() to handle both directions
-        if adjusted_pitch is not None and abs(adjusted_pitch) > abs(self.pitch_threshold):
+        # Check pitch (looking down) - only trigger for negative pitch (looking down)
+        # Don't use abs() to avoid false positives from smiling which can move landmarks upward
+        if adjusted_pitch is not None and adjusted_pitch < self.pitch_threshold:
             reasons.append('head_pitch')
         
         # Check distance (leaning forward)
