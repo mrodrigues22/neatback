@@ -62,7 +62,7 @@ class PostureDetector:
         self.pitch_threshold = -10  # degrees (negative = looking down)
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
-        self.shoulder_tilt_threshold = 7  # degrees (lowered from 10 to catch subtle tilts)
+        self.shoulder_tilt_threshold = 15  # degrees (use abs value, so catches both directions)
         
         # Compensation detection settings
         self.compensation_detection_enabled = True
@@ -466,13 +466,14 @@ class PostureDetector:
         """
         reasons = []
         
-        # Check pitch (looking down)
-        if adjusted_pitch < self.pitch_threshold:
+        # Check pitch (looking down) - use abs() to handle both directions
+        if adjusted_pitch is not None and abs(adjusted_pitch) > abs(self.pitch_threshold):
             reasons.append('head_pitch')
         
         # Check distance (leaning forward)
-        if (good_distance - current_distance) > self.distance_threshold:
-            reasons.append('distance')
+        if good_distance is not None and current_distance is not None:
+            if (good_distance - current_distance) > self.distance_threshold:
+                reasons.append('distance')
         
         # Check for compensation pattern FIRST (before individual checks)
         is_compensating, compensation_desc = self._detect_compensation(
