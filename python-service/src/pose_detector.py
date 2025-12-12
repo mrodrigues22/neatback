@@ -258,7 +258,18 @@ class PostureDetector:
             roll = 0
         
         # Convert radians to degrees
-        return (np.degrees(pitch), np.degrees(yaw), np.degrees(roll))
+        pitch_deg = np.degrees(pitch)
+        yaw_deg = np.degrees(yaw)
+        roll_deg = np.degrees(roll)
+        
+        # Normalize roll to -90 to 90 range (deviation from vertical)
+        # If angle is close to 180 or -180, we want the smallest angle from vertical (0 or ±180)
+        if roll_deg > 90:
+            roll_deg = roll_deg - 180
+        elif roll_deg < -90:
+            roll_deg = roll_deg + 180
+        
+        return (pitch_deg, yaw_deg, roll_deg)
     
     def calculate_distance(self, landmarks, frame_shape):
         """Calculate head-to-camera distance using interpupillary distance (IPD) method."""
