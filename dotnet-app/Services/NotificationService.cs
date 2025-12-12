@@ -9,8 +9,10 @@ public class NotificationService
     private DateTime _lastNotification = DateTime.MinValue;
     private MediaPlayer? _mediaPlayer;
     
+    public bool IsMuted { get; set; } = false;
+    
     public void ShowAlert(string message)
-    {
+    {   
         // Only show notification every 30 seconds
         if ((DateTime.Now - _lastNotification).TotalSeconds < 30)
             return;
@@ -19,8 +21,9 @@ public class NotificationService
             .AddText("Posture Alert")
             .AddText(message)
             .Show();
-        
-        PlayNotificationSound();
+            
+        if (!IsMuted)
+            PlayNotificationSound();
         
         _lastNotification = DateTime.Now;
     }

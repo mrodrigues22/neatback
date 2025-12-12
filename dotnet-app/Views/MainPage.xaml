@@ -42,6 +42,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -66,12 +67,26 @@
                             Click="SavePostureButton_Click"
                             IsEnabled="False"
                             Padding="16,8"
+                            Margin="0,0,8,0"
                             Background="Transparent"
                             Foreground="White"
                             BorderBrush="White"
                             BorderThickness="1"
                             CornerRadius="8"
                             FontWeight="SemiBold" />
+                    
+                    <Button x:Name="MuteButton"
+                            Grid.Column="4"
+                            Content="🔔"
+                            Click="MuteButton_Click"
+                            Padding="16,8"
+                            Background="Transparent"
+                            Foreground="White"
+                            BorderBrush="White"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            FontWeight="SemiBold"
+                            ToolTipService.ToolTip="Mute notifications" />
                 </Grid>
             </Border>
             

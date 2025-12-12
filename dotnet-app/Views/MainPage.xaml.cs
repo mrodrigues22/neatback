@@ -29,6 +29,7 @@ public sealed partial class MainPage : Page
     private TextBlock? _badDurationText;
     private Button? _startButton;
     private Button? _savePostureButton;
+    private Button? _muteButton;
     private Slider? _pitchThresholdSlider;
     private Slider? _distanceThresholdSlider;
     private Slider? _headRollThresholdSlider;
@@ -54,6 +55,7 @@ public sealed partial class MainPage : Page
         _badDurationText = FindName("BadDurationText") as TextBlock;
         _startButton = FindName("StartButton") as Button;
         _savePostureButton = FindName("SavePostureButton") as Button;
+        _muteButton = FindName("MuteButton") as Button;
         _pitchThresholdSlider = FindName("PitchThresholdSlider") as Slider;
         _distanceThresholdSlider = FindName("DistanceThresholdSlider") as Slider;
         _headRollThresholdSlider = FindName("HeadRollThresholdSlider") as Slider;
@@ -224,9 +226,9 @@ public sealed partial class MainPage : Page
             }
             
             // Send notification if needed
-            if (data.ShouldWarn)
+            if (data.ShouldWarn && _notificationService != null && !_notificationService.IsMuted)
             {
-                _notificationService?.ShowAlert($"Bad posture for {data.BadDuration} seconds! Please adjust.");
+                _notificationService.ShowAlert($"Bad posture for {data.BadDuration} seconds! Please adjust.");
             }
         });
     }
@@ -282,6 +284,28 @@ public sealed partial class MainPage : Page
         if (_wsClient != null)
         {
             await _wsClient.SetThresholdsAsync(pitchThreshold, distanceThreshold, headRollThreshold, shoulderTiltThreshold);
+        }
+    }
+    
+    private void MuteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_notificationService != null)
+        {
+            _notificationService.IsMuted = !_notificationService.IsMuted;
+            
+            if (_muteButton != null)
+            {
+                _muteButton.Content = _notificationService.IsMuted ? "🔕" : "🔔";
+                ToolTipService.SetToolTip(_muteButton, 
+                    _notificationService.IsMuted ? "Unmute notifications" : "Mute notifications");
+            }
+            
+            if (_statusText != null)
+            {
+                _statusText.Text = _notificationService.IsMuted 
+                    ? "🔕 Notifications muted" 
+                    : "🔔 Notifications enabled";
+            }
         }
     }
 }
