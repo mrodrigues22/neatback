@@ -32,18 +32,17 @@ public class NotificationService
     {
         try
         {
-            var soundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "notification.mp3");
+            // Use ms-appx URI for packaged apps - this works in both debug and installed scenarios
+            var soundUri = new Uri("ms-appx:///Assets/notification.mp3");
             
-            if (File.Exists(soundPath))
-            {
-                _mediaPlayer ??= new MediaPlayer();
-                _mediaPlayer.Source = MediaSource.CreateFromUri(new Uri(soundPath));
-                _mediaPlayer.Play();
-            }
+            _mediaPlayer ??= new MediaPlayer();
+            _mediaPlayer.Source = MediaSource.CreateFromUri(soundUri);
+            _mediaPlayer.Play();
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fail if sound can't be played
+            // Log the error so we can see what's happening
+            System.Diagnostics.Debug.WriteLine($"Failed to play notification sound: {ex.Message}");
         }
     }
 }
