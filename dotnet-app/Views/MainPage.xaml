@@ -21,6 +21,12 @@
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
         </Storyboard>
+        
+        <!-- Posture Status Colors -->
+        <SolidColorBrush x:Key="GoodPostureBrush" Color="#10B981"/>  <!-- Green -->
+        <SolidColorBrush x:Key="WarningPostureBrush" Color="#F59E0B"/>  <!-- Amber/Yellow -->
+        <SolidColorBrush x:Key="BadPostureBrush" Color="#EF4444"/>  <!-- Red -->
+        <SolidColorBrush x:Key="NeutralPostureBrush" Color="#6B7280"/>  <!-- Gray -->
     </Page.Resources>
     
     <Page.Content>
@@ -122,9 +128,10 @@
                                 <TextBlock Text="Live Camera Feed" FontSize="16" FontWeight="SemiBold" Foreground="#1F2937" />
                             </StackPanel>
                             
-                            <Border Grid.Row="1"
-                                    BorderBrush="{StaticResource PrimaryBrush}"
-                                    BorderThickness="2"
+                            <Border x:Name="CameraBorder"
+                                    Grid.Row="1"
+                                    BorderBrush="{StaticResource NeutralPostureBrush}"
+                                    BorderThickness="3"
                                     CornerRadius="12"
                                     Background="#000000">
                                 <Image x:Name="CameraPreview" Stretch="Uniform" />

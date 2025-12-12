@@ -19,6 +19,7 @@ public sealed partial class MainPage : Page
     private NotificationService? _notificationService;
     private bool _isMonitoring = false;
     private Image? _cameraPreview;
+    private Border? _cameraBorder;
     // Local references bound via FindName to avoid reliance on generated fields
     private TextBlock? _statusText;
     private ProgressBar? _badPostureProgress;
@@ -46,6 +47,7 @@ public sealed partial class MainPage : Page
         _notificationService = new NotificationService();
         // Bind local references to XAML controls
         _cameraPreview = FindName("CameraPreview") as Image;
+        _cameraBorder = FindName("CameraBorder") as Border;
         _statusText = FindName("StatusText") as TextBlock;
         _badPostureProgress = FindName("BadPostureProgress") as ProgressBar;
         _pitchText = FindName("PitchText") as TextBlock;
@@ -201,10 +203,11 @@ public sealed partial class MainPage : Page
             
             if (_badDurationText != null) _badDurationText.Text = $"{data.BadDuration} s";
             
-            // Update status
+            // Update status and camera border color
             if (!string.IsNullOrEmpty(data.Error))
             {
                 if (_statusText != null) _statusText.Text = data.Error;
+                UpdateCameraBorderColor("neutral");
             }
             else if (data.IsBad)
             {
@@ -214,6 +217,8 @@ public sealed partial class MainPage : Page
                     _badPostureProgress.Visibility = Visibility.Visible;
                     _badPostureProgress.Value = Math.Min(data.BadDuration, 30);
                 }
+                // Change border to yellow if bad but not warning yet, red if warning
+                UpdateCameraBorderColor(data.ShouldWarn ? "bad" : "warning");
             }
             else
             {
@@ -223,6 +228,7 @@ public sealed partial class MainPage : Page
                     _badPostureProgress.Visibility = Visibility.Collapsed;
                     _badPostureProgress.Value = 0;
                 }
+                UpdateCameraBorderColor("good");
             }
             
             // Send notification if needed
@@ -246,6 +252,21 @@ public sealed partial class MainPage : Page
                 if (_statusText != null) _statusText.Text = "❌ Failed to save posture. Make sure your face is visible.";
             }
         });
+    }
+    
+    private void UpdateCameraBorderColor(string status)
+    {
+        if (_cameraBorder == null) return;
+        
+        var brush = status switch
+        {
+            "good" => (Microsoft.UI.Xaml.Media.Brush)this.Resources["GoodPostureBrush"],
+            "warning" => (Microsoft.UI.Xaml.Media.Brush)this.Resources["WarningPostureBrush"],
+            "bad" => (Microsoft.UI.Xaml.Media.Brush)this.Resources["BadPostureBrush"],
+            _ => (Microsoft.UI.Xaml.Media.Brush)this.Resources["NeutralPostureBrush"]
+        };
+        
+        _cameraBorder.BorderBrush = brush;
     }
     
     private void OnThresholdsUpdated(object? sender, bool success)
