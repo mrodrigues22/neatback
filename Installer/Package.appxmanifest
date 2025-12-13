@@ -7,13 +7,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="48c93fc2-9b96-4910-9c1d-fc7ccea57b9d"
-    Publisher="CN=Mateus Rodrigues"
-    Version="1.0.18.0" />
+    Name="AlmeidaRodrigues.Slouti"
+    Publisher="CN=D7ED7EE7-206B-4F02-8072-AA7B60504A07"
+    Version="1.0.20.0" />
 
   <Properties>
-    <DisplayName>Installer</DisplayName>
-    <PublisherDisplayName>Mateus Rodrigues</PublisherDisplayName>
+    <DisplayName>Slouti</DisplayName>
+    <PublisherDisplayName>Almeida &amp; Rodrigues</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 

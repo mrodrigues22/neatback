@@ -375,7 +375,7 @@
                                             <TextBlock Text="⚙️ Overall Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
                                             <TextBlock x:Name="OverallSensitivityValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="OverallSensitivitySlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" ValueChanged="OverallSensitivitySlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
+                                        <Slider x:Name="OverallSensitivitySlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" IsThumbToolTipEnabled="False" ValueChanged="OverallSensitivitySlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
                                         <Grid>
                                             <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
                                             <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
@@ -405,7 +405,7 @@
                                             <TextBlock Text="📐 Head Tilt Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
                                             <TextBlock x:Name="PitchThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="PitchThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
+                                        <Slider x:Name="PitchThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" IsThumbToolTipEnabled="False" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
                                         <Grid>
                                             <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
                                             <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
@@ -418,7 +418,7 @@
                                             <TextBlock Text="📏 Distance Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
                                             <TextBlock x:Name="DistanceThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="DistanceThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
+                                        <Slider x:Name="DistanceThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" IsThumbToolTipEnabled="False" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
                                         <Grid>
                                             <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
                                             <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
@@ -431,7 +431,7 @@
                                             <TextBlock Text="🔄 Head Tilt Sideways Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
                                             <TextBlock x:Name="HeadRollThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="HeadRollThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
+                                        <Slider x:Name="HeadRollThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" IsThumbToolTipEnabled="False" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
                                         <Grid>
                                             <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
                                             <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
@@ -444,7 +444,7 @@
                                             <TextBlock Text="💪 Shoulder Balance Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
                                             <TextBlock x:Name="ShoulderTiltThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="ShoulderTiltThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
+                                        <Slider x:Name="ShoulderTiltThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="0.01" IsThumbToolTipEnabled="False" ValueChanged="ThresholdSlider_ValueChanged" Style="{StaticResource GradientSliderStyle}" />
                                         <Grid>
                                             <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
                                             <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
