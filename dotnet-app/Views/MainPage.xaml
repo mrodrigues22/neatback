@@ -142,10 +142,11 @@
                     <ColumnDefinition Width="380" />
                 </Grid.ColumnDefinitions>
                 
-                <!-- Left Column: Camera + Status -->
+                <!-- Left Column: Camera + Privacy + Status -->
                 <Grid Grid.Column="0" RowSpacing="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     
@@ -202,8 +203,31 @@
                         </Grid>
                     </Border>
                     
-                    <!-- Status Bar -->
+                    <!-- Privacy Disclaimer -->
                     <Border Grid.Row="1"
+                            CornerRadius="12"
+                            Background="#ECFDF5"
+                            BorderBrush="#10B981"
+                            BorderThickness="1"
+                            Padding="12,8"
+                            Margin="0,0,0,8">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16" Foreground="#059669" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            <TextBlock Grid.Column="1"
+                                      Text="🔒 Privacy: All processing happens locally on your device. Your images are never sent to external servers or third parties."
+                                      FontSize="12"
+                                      Foreground="#065F46"
+                                      TextWrapping="Wrap"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Status Bar -->
+                    <Border Grid.Row="2"
                             CornerRadius="12"
                             Background="{StaticResource CardSurfaceBrush}"
                             BorderBrush="#E5E7EB"
