@@ -208,8 +208,8 @@ class WebSocketServer:
                     }
                 })
                 
-                # Process at ~20 FPS for smoother preview (50ms per frame)
-                await asyncio.sleep(0.05)
+                # Process at ~30 FPS for smoother preview (33ms per frame)
+                await asyncio.sleep(0.033)
         
         except asyncio.CancelledError:
             pass

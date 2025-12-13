@@ -1,7 +1,7 @@
 # Pose Detection Stability Configuration
 
 # Smoothing Filter Settings
-SMOOTHING_WINDOW_SIZE = 5  # Number of frames to average (5 = ~0.25s at 20 FPS)
+SMOOTHING_WINDOW_SIZE = 5  # Number of frames to average (5 = ~0.17s at 30 FPS)
 
 # State Debouncer Settings
 GOOD_TO_BAD_FRAMES = 2     # Frames needed to detect bad posture
@@ -39,4 +39,4 @@ INITIAL_WARNING_SECONDS = 10    # First warning after 10s
 REPEAT_WARNING_INTERVAL = 20    # Then warn every 20s
 
 # Processing
-TARGET_FPS = 20                  # Target frame processing rate
+TARGET_FPS = 30                  # Target frame processing rate

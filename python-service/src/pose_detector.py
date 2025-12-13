@@ -61,7 +61,7 @@ class PostureDetector:
         self.good_shoulder_tilt = None
         self.good_body_lean_offset = None
         
-        # Add smoothing filter (window of 5 frames = ~0.25s at 20 FPS)
+        # Add smoothing filter (window of 5 frames = ~0.17s at 30 FPS)
         self.smoothing_filter = SmoothingFilter(window_size=SMOOTHING_WINDOW_SIZE)
         
         # Track current state for hysteresis
