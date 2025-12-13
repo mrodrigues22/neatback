@@ -50,6 +50,73 @@ public sealed partial class MainPage : Page
     private TextBlock? _headRollThresholdValue;
     private TextBlock? _shoulderTiltThresholdValue;
     
+    // Helper method to convert scale (1-5) to label
+    private string ScaleToLabel(int scale)
+    {
+        return scale switch
+        {
+            1 => "Low",
+            2 => "Medium-Low",
+            3 => "Medium",
+            4 => "Medium-High",
+            5 => "High",
+            _ => "Medium"
+        };
+    }
+    
+    // Helper methods to convert scale (1-5) to actual threshold values
+    private (double enterBad, double exitBad) ScaleToPitchThreshold(int scale)
+    {
+        return scale switch
+        {
+            1 => (-20, -16),
+            2 => (-15, -12),
+            3 => (-10, -8),
+            4 => (-7, -5),
+            5 => (-5, -3),
+            _ => (-10, -8)
+        };
+    }
+    
+    private (double enterBad, double exitBad) ScaleToDistanceThreshold(int scale)
+    {
+        return scale switch
+        {
+            1 => (15, 12),
+            2 => (12, 10),
+            3 => (10, 8),
+            4 => (8, 6),
+            5 => (6, 4),
+            _ => (10, 8)
+        };
+    }
+    
+    private (double enterBad, double exitBad) ScaleToHeadRollThreshold(int scale)
+    {
+        return scale switch
+        {
+            1 => (25, 20),
+            2 => (20, 16),
+            3 => (15, 12),
+            4 => (12, 9),
+            5 => (10, 7),
+            _ => (15, 12)
+        };
+    }
+    
+    private (double enterBad, double exitBad) ScaleToShoulderTiltThreshold(int scale)
+    {
+        return scale switch
+        {
+            1 => (10, 7),
+            2 => (7, 5),
+            3 => (5, 3),
+            4 => (4, 2),
+            5 => (3, 1),
+            _ => (5, 3)
+        };
+    }
+    
     public MainPage()
     {
         this.InitializeComponent();
@@ -444,26 +511,37 @@ public sealed partial class MainPage : Page
         if (!_isMonitoring)
             return;
         
-        var pitchThreshold = _pitchThresholdSlider != null ? _pitchThresholdSlider.Value : -10;
-        var distanceThreshold = _distanceThresholdSlider != null ? _distanceThresholdSlider.Value : 10;
-        var headRollThreshold = _headRollThresholdSlider != null ? _headRollThresholdSlider.Value : 15;
-        var shoulderTiltThreshold = _shoulderTiltThresholdSlider != null ? _shoulderTiltThresholdSlider.Value : 10;
+        // Get scale values (1-5) from sliders
+        var pitchScale = _pitchThresholdSlider != null ? (int)_pitchThresholdSlider.Value : 3;
+        var distanceScale = _distanceThresholdSlider != null ? (int)_distanceThresholdSlider.Value : 3;
+        var headRollScale = _headRollThresholdSlider != null ? (int)_headRollThresholdSlider.Value : 3;
+        var shoulderTiltScale = _shoulderTiltThresholdSlider != null ? (int)_shoulderTiltThresholdSlider.Value : 3;
         
+        // Update UI labels with sensitivity levels
         if (_pitchThresholdValue != null)
-            _pitchThresholdValue.Text = $"{pitchThreshold:F0}°";
+            _pitchThresholdValue.Text = ScaleToLabel(pitchScale);
         if (_distanceThresholdValue != null)
-        {
-            var inches = distanceThreshold / 2.54;
-            _distanceThresholdValue.Text = $"{inches:F0} in";
-        }
+            _distanceThresholdValue.Text = ScaleToLabel(distanceScale);
         if (_headRollThresholdValue != null)
-            _headRollThresholdValue.Text = $"{headRollThreshold:F0}°";
+            _headRollThresholdValue.Text = ScaleToLabel(headRollScale);
         if (_shoulderTiltThresholdValue != null)
-            _shoulderTiltThresholdValue.Text = $"{shoulderTiltThreshold:F0}°";
+            _shoulderTiltThresholdValue.Text = ScaleToLabel(shoulderTiltScale);
         
+        // Convert scales to actual threshold values
+        var pitchThresholds = ScaleToPitchThreshold(pitchScale);
+        var distanceThresholds = ScaleToDistanceThreshold(distanceScale);
+        var headRollThresholds = ScaleToHeadRollThreshold(headRollScale);
+        var shoulderTiltThresholds = ScaleToShoulderTiltThreshold(shoulderTiltScale);
+        
+        // Send actual threshold values to Python service (using enter_bad values)
         if (_wsClient != null)
         {
-            await _wsClient.SetThresholdsAsync(pitchThreshold, distanceThreshold, headRollThreshold, shoulderTiltThreshold);
+            await _wsClient.SetThresholdsAsync(
+                pitchThresholds.enterBad,
+                distanceThresholds.enterBad,
+                headRollThresholds.enterBad,
+                shoulderTiltThresholds.enterBad
+            );
         }
     }
     

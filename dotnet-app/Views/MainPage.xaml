@@ -328,37 +328,53 @@
                                     <!-- Pitch Threshold -->
                                     <StackPanel Spacing="4">
                                         <Grid>
-                                            <TextBlock Text="📐 Pitch" FontSize="13" FontWeight="Medium" Foreground="#374151" />
-                                            <TextBlock x:Name="PitchThresholdValue" Text="-10°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock Text="📐 Head Tilt Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="PitchThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="PitchThresholdSlider" Minimum="-30" Maximum="0" Value="-10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Slider x:Name="PitchThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Grid>
+                                            <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
+                                            <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
+                                        </Grid>
                                     </StackPanel>
                                     
                                     <!-- Distance Threshold -->
                                     <StackPanel Spacing="4">
                                         <Grid>
-                                            <TextBlock Text="📏 Distance" FontSize="13" FontWeight="Medium" Foreground="#374151" />
-                                            <TextBlock x:Name="DistanceThresholdValue" Text="4 in" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock Text="📏 Distance Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="DistanceThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="DistanceThresholdSlider" Minimum="5" Maximum="20" Value="10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Slider x:Name="DistanceThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Grid>
+                                            <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
+                                            <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
+                                        </Grid>
                                     </StackPanel>
                                     
                                     <!-- Head Roll Threshold -->
                                     <StackPanel Spacing="4">
                                         <Grid>
-                                            <TextBlock Text="🔄 Head Roll" FontSize="13" FontWeight="Medium" Foreground="#374151" />
-                                            <TextBlock x:Name="HeadRollThresholdValue" Text="15°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock Text="🔄 Head Tilt Sideways Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="HeadRollThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="HeadRollThresholdSlider" Minimum="5" Maximum="30" Value="15" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Slider x:Name="HeadRollThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Grid>
+                                            <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
+                                            <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
+                                        </Grid>
                                     </StackPanel>
                                     
                                     <!-- Shoulder Tilt Threshold -->
                                     <StackPanel Spacing="4">
                                         <Grid>
-                                            <TextBlock Text="💪 Shoulder Tilt" FontSize="13" FontWeight="Medium" Foreground="#374151" />
-                                            <TextBlock x:Name="ShoulderTiltThresholdValue" Text="10°" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock Text="💪 Shoulder Balance Sensitivity" FontSize="13" FontWeight="Medium" Foreground="#374151" />
+                                            <TextBlock x:Name="ShoulderTiltThresholdValue" Text="Medium" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource PrimaryBrush}" />
                                         </Grid>
-                                        <Slider x:Name="ShoulderTiltThresholdSlider" Minimum="5" Maximum="20" Value="10" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Slider x:Name="ShoulderTiltThresholdSlider" Minimum="1" Maximum="5" Value="3" StepFrequency="1" ValueChanged="ThresholdSlider_ValueChanged" />
+                                        <Grid>
+                                            <TextBlock Text="Low" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Left" />
+                                            <TextBlock Text="High" FontSize="10" Foreground="#9CA3AF" HorizontalAlignment="Right" />
+                                        </Grid>
                                     </StackPanel>
                                 </StackPanel>
                             </controls:Expander.Content>
