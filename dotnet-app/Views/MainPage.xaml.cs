@@ -170,6 +170,7 @@ public sealed partial class MainPage : Page
         _wsClient.PostureDataReceived += OnPostureDataReceived;
         _wsClient.PostureSaved += OnPostureSaved;
         _wsClient.ThresholdsUpdated += OnThresholdsUpdated;
+        _wsClient.MonitoringStarted += OnMonitoringStarted;
     }
     
     private async void StartButton_Click(object sender, RoutedEventArgs e)
@@ -178,6 +179,20 @@ public sealed partial class MainPage : Page
         {
             if (!_isMonitoring)
             {
+                // Mark as monitoring to prevent double-clicks
+                _isMonitoring = true;
+                
+                // Update button immediately to show monitoring state
+                if (_startButton != null)
+                {
+                    _startButton.Content = "⏹ Stop Monitoring";
+                    _startButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 211, 211, 211));
+                    _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Black);
+                }
+                
+                // Enable save posture button immediately
+                if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
+                
                 // Show loading spinner
                 if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Visible;
                 
@@ -187,15 +202,8 @@ public sealed partial class MainPage : Page
                 await _wsClient!.ConnectAsync();
                 await _wsClient!.StartMonitoringAsync();
                 
-                _isMonitoring = true;
-                if (_startButton != null)
-                {
-                    _startButton.Content = "⏹ Stop Monitoring";
-                    _startButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 211, 211, 211));
-                    _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Black);
-                }
-                if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
-                if (_statusText != null) _statusText.Text = "Monitoring started. Please save your good posture!";
+                // Status text will update in OnMonitoringStarted event handler
+                // Status remains "Starting..." until camera is ready
             }
             else
             {
@@ -205,8 +213,19 @@ public sealed partial class MainPage : Page
         }
         catch (Exception ex)
         {
+            // Reset monitoring state on error
+            _isMonitoring = false;
+            
             // Hide loading spinner on error
             if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Collapsed;
+            
+            // Reset button
+            if (_startButton != null)
+            {
+                _startButton.Content = "▶ Start Monitoring";
+                _startButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 16, 185, 129));
+                _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
+            }
             
             if (_statusText != null) _statusText.Text = $"Error: {ex.Message}";
         }
@@ -259,6 +278,17 @@ public sealed partial class MainPage : Page
             if (_statusText != null) _statusText.Text = "Saving good posture...";
             await _wsClient.SaveGoodPostureAsync();
         }
+    }
+    
+    private void OnMonitoringStarted(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            // Button was already updated in StartButton_Click
+            // Just update status and enable save button
+            if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
+            if (_statusText != null) _statusText.Text = "Monitoring started. Please save your good posture!";
+        });
     }
     
     private void OnPostureDataReceived(object? sender, PostureData data)
