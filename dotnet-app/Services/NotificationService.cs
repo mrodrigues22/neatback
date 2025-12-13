@@ -4,10 +4,11 @@ using Windows.Media.Playback;
 
 namespace Slouti.Services;
 
-public class NotificationService
+public class NotificationService : IDisposable
 {
     private DateTime _lastNotification = DateTime.MinValue;
     private MediaPlayer? _mediaPlayer;
+    private bool _disposed = false;
     
     public bool IsMuted { get; set; } = false;
     
@@ -32,10 +33,30 @@ public class NotificationService
     {
         try
         {
-            // Use ms-appx URI for packaged apps - this works in both debug and installed scenarios
-            var soundUri = new Uri("ms-appx:///Assets/notification.mp3");
+            // Dispose previous player if it exists to avoid state issues
+            _mediaPlayer?.Dispose();
             
-            _mediaPlayer ??= new MediaPlayer();
+            Uri soundUri;
+            
+            // Try local file path first (for debug mode)
+            var localPath = Path.Combine(AppContext.BaseDirectory, "Assets", "notification.mp3");
+            if (File.Exists(localPath))
+            {
+                soundUri = new Uri(localPath, UriKind.Absolute);
+            }
+            else
+            {
+                // Fall back to ms-appx URI for packaged apps
+                soundUri = new Uri("ms-appx:///Assets/notification.mp3");
+            }
+            
+            // Create a new MediaPlayer instance each time for reliability
+            _mediaPlayer = new MediaPlayer
+            {
+                AutoPlay = false,
+                Volume = 1.0
+            };
+            
             _mediaPlayer.Source = MediaSource.CreateFromUri(soundUri);
             _mediaPlayer.Play();
         }
@@ -43,6 +64,16 @@ public class NotificationService
         {
             // Log the error so we can see what's happening
             System.Diagnostics.Debug.WriteLine($"Failed to play notification sound: {ex.Message}");
+        }
+    }
+    
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _mediaPlayer?.Dispose();
+            _mediaPlayer = null;
+            _disposed = true;
         }
     }
 }
