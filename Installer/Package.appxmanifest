@@ -9,7 +9,7 @@
   <Identity
     Name="48c93fc2-9b96-4910-9c1d-fc7ccea57b9d"
     Publisher="CN=Mateus Rodrigues"
-    Version="1.0.8.0" />
+    Version="1.0.10.0" />
 
   <Properties>
     <DisplayName>Installer</DisplayName>

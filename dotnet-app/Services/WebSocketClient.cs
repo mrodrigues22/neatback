@@ -26,9 +26,32 @@ public class WebSocketClient
     
     public async Task ConnectAsync()
     {
-        _ws = new ClientWebSocket();
-        await _ws.ConnectAsync(new Uri(_uri), CancellationToken.None);
-        _ = Task.Run(ReceiveLoop);
+        // Retry connection with exponential backoff to allow Python service to start
+        const int maxRetries = 10;
+        int retryDelayMs = 500;
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                _ws = new ClientWebSocket();
+                await _ws.ConnectAsync(new Uri(_uri), CancellationToken.None);
+                _ = Task.Run(ReceiveLoop);
+                return; // Success!
+            }
+            catch (Exception ex)
+            {
+                if (attempt == maxRetries)
+                {
+                    // Last attempt failed, throw the exception
+                    throw new Exception("Unable to start the webcam. Please try restarting the app.", ex);
+                }
+                
+                // Wait before retrying (exponential backoff)
+                await Task.Delay(retryDelayMs);
+                retryDelayMs = Math.Min(retryDelayMs * 2, 5000); // Cap at 5 seconds
+            }
+        }
     }
     
     private async Task ReceiveLoop()
