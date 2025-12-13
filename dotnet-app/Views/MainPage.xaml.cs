@@ -49,6 +49,13 @@ public sealed partial class MainPage : Page
     private TextBlock? _distanceThresholdValue;
     private TextBlock? _headRollThresholdValue;
     private TextBlock? _shoulderTiltThresholdValue;
+    private Slider? _overallSensitivitySlider;
+    private TextBlock? _overallSensitivityValue;
+    private StackPanel? _simpleSensitivityPanel;
+    private StackPanel? _advancedSensitivityPanel;
+    private Button? _showAdvancedButton;
+    private Button? _hideAdvancedButton;
+    private bool _isUpdatingSliders = false;
     
     // Helper method to convert scale (1-5) to label
     private string ScaleToLabel(int scale)
@@ -152,6 +159,12 @@ public sealed partial class MainPage : Page
         _distanceThresholdValue = FindName("DistanceThresholdValue") as TextBlock;
         _headRollThresholdValue = FindName("HeadRollThresholdValue") as TextBlock;
         _shoulderTiltThresholdValue = FindName("ShoulderTiltThresholdValue") as TextBlock;
+        _overallSensitivitySlider = FindName("OverallSensitivitySlider") as Slider;
+        _overallSensitivityValue = FindName("OverallSensitivityValue") as TextBlock;
+        _simpleSensitivityPanel = FindName("SimpleSensitivityPanel") as StackPanel;
+        _advancedSensitivityPanel = FindName("AdvancedSensitivityPanel") as StackPanel;
+        _showAdvancedButton = FindName("ShowAdvancedButton") as Button;
+        _hideAdvancedButton = FindName("HideAdvancedButton") as Button;
         
         // Subscribe to events
         _wsClient.PostureDataReceived += OnPostureDataReceived;
@@ -559,6 +572,75 @@ public sealed partial class MainPage : Page
                     ? "🔕 Notifications muted" 
                     : "🔔 Notifications enabled";
             }
+        }
+    }
+    
+    private async void OverallSensitivitySlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (_isUpdatingSliders || _overallSensitivitySlider == null)
+            return;
+        
+        int overallScale = (int)_overallSensitivitySlider.Value;
+        
+        // Update label
+        if (_overallSensitivityValue != null)
+            _overallSensitivityValue.Text = ScaleToLabel(overallScale);
+        
+        // Update all individual sliders to match
+        _isUpdatingSliders = true;
+        if (_pitchThresholdSlider != null) _pitchThresholdSlider.Value = overallScale;
+        if (_distanceThresholdSlider != null) _distanceThresholdSlider.Value = overallScale;
+        if (_headRollThresholdSlider != null) _headRollThresholdSlider.Value = overallScale;
+        if (_shoulderTiltThresholdSlider != null) _shoulderTiltThresholdSlider.Value = overallScale;
+        _isUpdatingSliders = false;
+        
+        // Update individual labels
+        if (_pitchThresholdValue != null) _pitchThresholdValue.Text = ScaleToLabel(overallScale);
+        if (_distanceThresholdValue != null) _distanceThresholdValue.Text = ScaleToLabel(overallScale);
+        if (_headRollThresholdValue != null) _headRollThresholdValue.Text = ScaleToLabel(overallScale);
+        if (_shoulderTiltThresholdValue != null) _shoulderTiltThresholdValue.Text = ScaleToLabel(overallScale);
+        
+        // Send to WebSocket if monitoring
+        if (_isMonitoring && _wsClient != null)
+        {
+            await _wsClient.SetThresholdsAsync(
+                overallScale,
+                overallScale,
+                overallScale,
+                overallScale
+            );
+        }
+    }
+    
+    private void ShowAdvancedButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_simpleSensitivityPanel != null)
+            _simpleSensitivityPanel.Visibility = Visibility.Collapsed;
+        if (_advancedSensitivityPanel != null)
+            _advancedSensitivityPanel.Visibility = Visibility.Visible;
+    }
+    
+    private void HideAdvancedButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_advancedSensitivityPanel != null)
+            _advancedSensitivityPanel.Visibility = Visibility.Collapsed;
+        if (_simpleSensitivityPanel != null)
+            _simpleSensitivityPanel.Visibility = Visibility.Visible;
+        
+        // When returning to simple mode, sync overall slider with average of individual sliders
+        if (_pitchThresholdSlider != null && _distanceThresholdSlider != null && 
+            _headRollThresholdSlider != null && _shoulderTiltThresholdSlider != null &&
+            _overallSensitivitySlider != null)
+        {
+            double average = (_pitchThresholdSlider.Value + _distanceThresholdSlider.Value + 
+                            _headRollThresholdSlider.Value + _shoulderTiltThresholdSlider.Value) / 4.0;
+            int roundedAverage = (int)Math.Round(average);
+            
+            _isUpdatingSliders = true;
+            _overallSensitivitySlider.Value = roundedAverage;
+            if (_overallSensitivityValue != null)
+                _overallSensitivityValue.Text = ScaleToLabel(roundedAverage);
+            _isUpdatingSliders = false;
         }
     }
 }
