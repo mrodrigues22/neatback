@@ -95,25 +95,22 @@
 
     <!-- Python Service Integration -->
     <ItemGroup>
-        <PythonServiceFiles Include="..\python-service\dist\slouti-service.exe" />
-    </ItemGroup>
-
-    <Target Name="CopyPythonService" AfterTargets="Build">
-        <Message Text="Copying Python service files to output directory..." Importance="high" />
-        <Copy SourceFiles="@(PythonServiceFiles)" 
-              DestinationFolder="$(OutDir)PythonService" 
-              SkipUnchangedFiles="true" 
-              Condition="Exists('..\python-service\dist\slouti-service.exe')" />
-        <Warning Text="Python service executable not found at ..\python-service\dist\slouti-service.exe - Run PyInstaller to build it first" 
-                 Condition="!Exists('..\python-service\dist\slouti-service.exe')" />
-    </Target>
-
-    <!-- Include Python Service in MSIX package -->
-    <ItemGroup>
-        <Content Include="..\python-service\dist\slouti-service.exe" 
-                 Link="PythonService\slouti-service.exe"
-                 Condition="Exists('..\python-service\dist\slouti-service.exe')">
+        <None Include="..\python-service\dist\slouti-service.exe" 
+              Condition="Exists('..\python-service\dist\slouti-service.exe')">
+            <Link>PythonService\slouti-service.exe</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </None>
     </ItemGroup>
+
+    <!-- Ensure Python Service is included in MSIX package -->
+    <Target Name="IncludePythonServiceInPackage" BeforeTargets="_GenerateCurrentProjectAppxManifest">
+        <ItemGroup>
+            <AppxPackagePayload Include="$(OutDir)PythonService\slouti-service.exe" 
+                                Condition="Exists('$(OutDir)PythonService\slouti-service.exe')">
+                <PackagePath>PythonService\slouti-service.exe</PackagePath>
+            </AppxPackagePayload>
+        </ItemGroup>
+        <Message Text="Including Python service in MSIX package: $(OutDir)PythonService\slouti-service.exe" Importance="high" />
+    </Target>
 </Project>

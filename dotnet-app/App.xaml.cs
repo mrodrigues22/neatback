@@ -83,17 +83,11 @@ namespace Slouti
                     }
                 };
                 
-                _pythonServiceProcess.OutputDataReceived += (sender, e) => { };
-                
-                _pythonServiceProcess.ErrorDataReceived += (sender, e) => { };
-                
                 _pythonServiceProcess.Start();
-                _pythonServiceProcess.BeginOutputReadLine();
-                _pythonServiceProcess.BeginErrorReadLine();
             }
-            catch (Exception ex)
+            catch
             {
-                // Service failed to start
+                // Service failed to start - silently continue
             }
         }
         

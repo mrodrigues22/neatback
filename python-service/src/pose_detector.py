@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import os
+import sys
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from smoothing_filter import SmoothingFilter
@@ -15,8 +16,16 @@ class PostureDetector:
         self.FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
         self.VisionRunningMode = mp.tasks.vision.RunningMode
         
-        # Get the path to the model file (in the same directory as this script)
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Get the path to the model file
+        # When running as PyInstaller bundle, use sys._MEIPASS
+        # Otherwise use the script directory
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            script_dir = sys._MEIPASS
+        else:
+            # Running as script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+        
         model_path = os.path.join(script_dir, 'face_landmarker.task')
         
         # Configure face landmarker
@@ -34,7 +43,7 @@ class PostureDetector:
         self.PoseLandmarker = mp.tasks.vision.PoseLandmarker
         self.PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
         
-        # Get path to pose model
+        # Get path to pose model (use same directory resolution as face model)
         pose_model_path = os.path.join(script_dir, 'pose_landmarker.task')
         
         # Configure pose landmarker (only if model file exists)
