@@ -37,7 +37,7 @@ def scale_to_head_roll_threshold(scale: int) -> tuple[float, float]:
         2: (20, 16),    # Lenient
         3: (15, 12),    # Medium - balanced (default)
         4: (12, 9),     # Strict
-        5: (10, 7)      # Very strict - very sensitive
+        5: (1, 0.5)     # Very strict - very sensitive (triggers at ±1°)
     }
     return mapping.get(scale, (15, 12))
 
@@ -48,7 +48,7 @@ def scale_to_shoulder_tilt_threshold(scale: int) -> tuple[float, float]:
         2: (7, 5),      # Lenient
         3: (5, 3),      # Medium - balanced (default)
         4: (4, 2),      # Strict
-        5: (3, 1)       # Very strict - very sensitive
+        5: (1, 0.5)     # Very strict - very sensitive (triggers at ±1°)
     }
     return mapping.get(scale, (5, 3))
 
