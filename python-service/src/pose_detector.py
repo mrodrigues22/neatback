@@ -208,46 +208,7 @@ class PostureDetector:
         pitch, _, _ = self.calculate_head_angles(landmarks, frame_shape)
         return pitch
     
-    def _detect_compensation(self, adjusted_roll, adjusted_shoulder_tilt):
-        """
-        Detect if user is compensating body tilt with head tilt.
-        
-        Returns:
-            tuple: (is_compensating: bool, description: str or None)
-        """
-        if not self.compensation_detection_enabled:
-            return False, None
-        
-        # Skip if either measurement is missing
-        if adjusted_roll is None or adjusted_shoulder_tilt is None:
-            return False, None
-        
-        # Check if both have significant tilt (>5°)
-        has_head_tilt = abs(adjusted_roll) > self.min_tilt_for_compensation
-        has_shoulder_tilt = abs(adjusted_shoulder_tilt) > self.min_tilt_for_compensation
-        
-        if not (has_head_tilt or has_shoulder_tilt):
-            return False, None
-        
-        # Check if tilts are in opposite directions
-        opposite_directions = (adjusted_roll * adjusted_shoulder_tilt) < 0
-        
-        if opposite_directions:
-            # Calculate compensation ratio
-            smaller = min(abs(adjusted_roll), abs(adjusted_shoulder_tilt))
-            larger = max(abs(adjusted_roll), abs(adjusted_shoulder_tilt))
-            ratio = smaller / larger if larger > 0 else 0
-            
-            if ratio > self.compensation_ratio_threshold:
-                # Determine pattern
-                if adjusted_shoulder_tilt > 0:
-                    description = "Body leaning right, head compensating left"
-                else:
-                    description = "Body leaning left, head compensating right"
-                
-                return True, description
-        
-        return False, None
+
     
     def _get_shoulder_confidence(self, pose_landmarks):
         """Get average visibility/confidence of shoulder landmarks."""
@@ -629,7 +590,6 @@ class PostureDetector:
             'posture_issues': issues,
             'shoulder_detection_active': pose_landmarks is not None,
             'shoulder_detection_confidence': self._get_shoulder_confidence(pose_landmarks),
-            'compensation_description': self._last_compensation_desc,
             'face_bbox': face_bbox
         }
     
@@ -761,17 +721,6 @@ class PostureDetector:
             #         is_lower_bad=False
             #     ):
             #         reasons.append('body_lean')
-            
-            # Check for compensation pattern (for informational purposes)
-            is_compensating, compensation_desc = self._detect_compensation(
-                adjusted_roll, adjusted_shoulder_tilt
-            )
-            
-            if is_compensating:
-                # Store compensation description for warning message
-                self._last_compensation_desc = compensation_desc
-            else:
-                self._last_compensation_desc = None
         
         is_bad = len(reasons) > 0
         
