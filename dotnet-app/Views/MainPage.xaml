@@ -155,7 +155,28 @@
                                 <Border.Shadow>
                                     <ThemeShadow />
                                 </Border.Shadow>
-                                <Image x:Name="CameraPreview" Stretch="Uniform" />
+                                <Grid>
+                                    <Image x:Name="CameraPreview" Stretch="Uniform" />
+                                    
+                                    <!-- Loading Spinner Overlay -->
+                                    <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="#90000000">
+                                        <Grid.Shadow>
+                                            <ThemeShadow />
+                                        </Grid.Shadow>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                                            <ProgressRing Width="64" 
+                                                         Height="64" 
+                                                         IsActive="True"
+                                                         Foreground="{StaticResource PrimaryBrush}" />
+                                            <TextBlock Text="Starting camera..." 
+                                                      FontSize="16" 
+                                                      FontWeight="SemiBold"
+                                                      Foreground="White" 
+                                                      HorizontalAlignment="Center" 
+                                                      Opacity="0.95" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
                             </Border>
                         </Grid>
                     </Border>

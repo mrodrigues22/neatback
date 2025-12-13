@@ -28,6 +28,7 @@ public sealed partial class MainPage : Page
     private Border? _shoulderCard;
     private Border? _distanceCard;
     private Border? _badDurationCard;
+    private Grid? _loadingOverlay;
     private string _currentPostureStatus = "neutral";
     // Local references bound via FindName to avoid reliance on generated fields
     private TextBlock? _statusText;
@@ -57,6 +58,7 @@ public sealed partial class MainPage : Page
         // Bind local references to XAML controls
         _cameraPreview = FindName("CameraPreview") as Image;
         _cameraBorder = FindName("CameraBorder") as Border;
+        _loadingOverlay = FindName("LoadingOverlay") as Grid;
         _pulseAnimation = FindName("PulseAnimation") as Microsoft.UI.Xaml.Media.Animation.Storyboard;
         _spinAnimation = FindName("SpinAnimation") as Microsoft.UI.Xaml.Media.Animation.Storyboard;
         _statusIcon = FindName("StatusIcon") as FontIcon;
@@ -96,8 +98,11 @@ public sealed partial class MainPage : Page
         {
             if (!_isMonitoring)
             {
+                // Show loading spinner
+                if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Visible;
+                
                 // Connect to WebSocket and start monitoring
-                if (_statusText != null) _statusText.Text = "Connecting to service...";
+                if (_statusText != null) _statusText.Text = "Starting...";
                 
                 await _wsClient!.ConnectAsync();
                 await _wsClient!.StartMonitoringAsync();
@@ -121,6 +126,9 @@ public sealed partial class MainPage : Page
         }
         catch (Exception ex)
         {
+            // Hide loading spinner on error
+            if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Collapsed;
+            
             if (_statusText != null) _statusText.Text = $"Error: {ex.Message}";
             System.Diagnostics.Debug.WriteLine($"Error starting monitoring: {ex}");
         }
@@ -129,6 +137,9 @@ public sealed partial class MainPage : Page
     private async Task StopMonitoring()
     {
         _isMonitoring = false;
+        
+        // Hide loading spinner if still visible
+        if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Collapsed;
         
         // Stop monitoring on backend
         if (_wsClient != null)
@@ -180,6 +191,12 @@ public sealed partial class MainPage : Page
             {
                 try
                 {
+                    // Hide loading spinner when first frame is received
+                    if (_loadingOverlay != null && _loadingOverlay.Visibility == Visibility.Visible)
+                    {
+                        _loadingOverlay.Visibility = Visibility.Collapsed;
+                    }
+                    
                     byte[] imageBytes = Convert.FromBase64String(data.Frame);
                     using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                     await stream.WriteAsync(imageBytes.AsBuffer());
