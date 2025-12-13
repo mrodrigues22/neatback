@@ -85,29 +85,33 @@ class WebSocketServer:
                     }))
             
             elif msg_type == 'set_thresholds':
-                # Update thresholds - values received are actual technical values, not scales
-                # The C# side has already converted scales to technical values
+                # Update thresholds using sensitivity scales (1-5)
+                # Python service is the single source of truth for threshold mappings
                 if self.detector:
-                    # Update the actual thresholds dictionary that's used for detection
-                    pitch_val = data.get('pitch_threshold', -10)
-                    self.detector.thresholds['pitch']['enter_bad'] = pitch_val
-                    # Exit threshold is slightly more lenient (closer to 0) to prevent flapping
-                    self.detector.thresholds['pitch']['exit_bad'] = pitch_val + 2 if pitch_val < 0 else pitch_val - 2
+                    from config import (scale_to_pitch_threshold, scale_to_distance_threshold,
+                                       scale_to_head_roll_threshold, scale_to_shoulder_tilt_threshold)
                     
-                    distance_val = data.get('distance_threshold', 10)
-                    self.detector.thresholds['distance']['enter_bad'] = distance_val
-                    # Exit threshold is slightly less strict (larger value) to prevent flapping
-                    self.detector.thresholds['distance']['exit_bad'] = distance_val - 2 if distance_val > 2 else distance_val * 0.8
+                    # Get sensitivity scales (1-5) from message
+                    pitch_scale = data.get('pitch_scale', 3)
+                    distance_scale = data.get('distance_scale', 3)
+                    head_roll_scale = data.get('head_roll_scale', 3)
+                    shoulder_tilt_scale = data.get('shoulder_tilt_scale', 3)
                     
-                    head_roll_val = data.get('head_roll_threshold', 15)
-                    self.detector.thresholds['head_roll']['enter_bad'] = head_roll_val
-                    # Exit threshold is slightly less strict to prevent flapping
-                    self.detector.thresholds['head_roll']['exit_bad'] = head_roll_val - 3 if head_roll_val > 3 else head_roll_val * 0.8
+                    # Convert scales to threshold values using config functions
+                    pitch_enter, pitch_exit = scale_to_pitch_threshold(pitch_scale)
+                    distance_enter, distance_exit = scale_to_distance_threshold(distance_scale)
+                    head_roll_enter, head_roll_exit = scale_to_head_roll_threshold(head_roll_scale)
+                    shoulder_tilt_enter, shoulder_tilt_exit = scale_to_shoulder_tilt_threshold(shoulder_tilt_scale)
                     
-                    shoulder_tilt_val = data.get('shoulder_tilt_threshold', 5)
-                    self.detector.thresholds['shoulder_tilt']['enter_bad'] = shoulder_tilt_val
-                    # Exit threshold is more lenient to prevent flapping
-                    self.detector.thresholds['shoulder_tilt']['exit_bad'] = shoulder_tilt_val - 2 if shoulder_tilt_val > 2 else shoulder_tilt_val * 0.6
+                    # Update thresholds
+                    self.detector.thresholds['pitch']['enter_bad'] = pitch_enter
+                    self.detector.thresholds['pitch']['exit_bad'] = pitch_exit
+                    self.detector.thresholds['distance']['enter_bad'] = distance_enter
+                    self.detector.thresholds['distance']['exit_bad'] = distance_exit
+                    self.detector.thresholds['head_roll']['enter_bad'] = head_roll_enter
+                    self.detector.thresholds['head_roll']['exit_bad'] = head_roll_exit
+                    self.detector.thresholds['shoulder_tilt']['enter_bad'] = shoulder_tilt_enter
+                    self.detector.thresholds['shoulder_tilt']['exit_bad'] = shoulder_tilt_exit
                     
                     await websocket.send(json.dumps({
                         'type': 'thresholds_updated',

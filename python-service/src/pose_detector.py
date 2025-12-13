@@ -88,8 +88,7 @@ class PostureDetector:
         
         # Track sustained tilt duration to avoid false positives
         self._shoulder_tilt_start_time = None
-        self._shoulder_tilt_sustained_seconds = 3  # Require 3 seconds of sustained tilt
-        self._shoulder_tilt_sustained_seconds = 3  # Require 3 seconds of sustained tilt
+        self._shoulder_tilt_sustained_seconds = 0.5  # Require 0.5 seconds of sustained tilt (reduced for higher sensitivity)
         
         # 3D face model coordinates (in mm)
         # Using stable landmarks that don't move with facial expressions (smiling, etc.)

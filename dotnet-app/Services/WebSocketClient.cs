@@ -165,17 +165,17 @@ public class WebSocketClient
         );
     }
     
-    public async Task SetThresholdsAsync(double pitchThreshold, double distanceThreshold, double headRollThreshold = 15, double shoulderTiltThreshold = 10)
+    public async Task SetThresholdsAsync(int pitchScale, int distanceScale, int headRollScale = 3, int shoulderTiltScale = 3)
     {
         if (_ws?.State != WebSocketState.Open)
             return;
         
         var message = JsonSerializer.Serialize(new SetThresholdsMessage
         {
-            pitch_threshold = pitchThreshold,
-            distance_threshold = distanceThreshold,
-            head_roll_threshold = headRollThreshold,
-            shoulder_tilt_threshold = shoulderTiltThreshold
+            pitch_scale = pitchScale,
+            distance_scale = distanceScale,
+            head_roll_scale = headRollScale,
+            shoulder_tilt_scale = shoulderTiltScale
         }, JsonContext.Default.SetThresholdsMessage);
         
         var bytes = Encoding.UTF8.GetBytes(message);

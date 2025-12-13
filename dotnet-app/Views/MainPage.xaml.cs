@@ -99,7 +99,7 @@ public sealed partial class MainPage : Page
             2 => (20, 16),
             3 => (15, 12),
             4 => (12, 9),
-            5 => (10, 7),
+            5 => (1, 0.5),
             _ => (15, 12)
         };
     }
@@ -112,7 +112,7 @@ public sealed partial class MainPage : Page
             2 => (7, 5),
             3 => (5, 3),
             4 => (4, 2),
-            5 => (3, 1),
+            5 => (1, 0.5),
             _ => (5, 3)
         };
     }
@@ -527,20 +527,15 @@ public sealed partial class MainPage : Page
         if (_shoulderTiltThresholdValue != null)
             _shoulderTiltThresholdValue.Text = ScaleToLabel(shoulderTiltScale);
         
-        // Convert scales to actual threshold values
-        var pitchThresholds = ScaleToPitchThreshold(pitchScale);
-        var distanceThresholds = ScaleToDistanceThreshold(distanceScale);
-        var headRollThresholds = ScaleToHeadRollThreshold(headRollScale);
-        var shoulderTiltThresholds = ScaleToShoulderTiltThreshold(shoulderTiltScale);
-        
-        // Send actual threshold values to Python service (using enter_bad values)
+        // Send sensitivity scales directly to Python service
+        // Python service will convert them to actual threshold values (single source of truth)
         if (_wsClient != null)
         {
             await _wsClient.SetThresholdsAsync(
-                pitchThresholds.enterBad,
-                distanceThresholds.enterBad,
-                headRollThresholds.enterBad,
-                shoulderTiltThresholds.enterBad
+                pitchScale,
+                distanceScale,
+                headRollScale,
+                shoulderTiltScale
             );
         }
     }
