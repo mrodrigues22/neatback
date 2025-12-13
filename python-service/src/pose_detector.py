@@ -643,8 +643,6 @@ class PostureDetector:
         # This prevents false positives when user is looking left/right
         head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
-        print(f"[DEBUG] head_is_facing_forward={head_is_facing_forward}, yaw={yaw if yaw else 'None'}, yaw_threshold={self.yaw_threshold}")
-        
         if head_is_facing_forward:
             # Check distance with hysteresis (leaning forward)
             # Distance detection using IPD is only reliable when facing camera
@@ -680,32 +678,22 @@ class PostureDetector:
             import time
             current_time = time.time()
             
-            # Debug logging for shoulder tilt
-            print(f"[DEBUG] Shoulder tilt check: adjusted={adjusted_shoulder_tilt:.2f}°, " 
-                  f"abs={abs(adjusted_shoulder_tilt):.2f}°, "
-                  f"threshold={self.thresholds['shoulder_tilt']['enter_bad']}°, "
-                  f"exceeds={tilt_exceeds_threshold}, "
-                  f"timer_started={self._shoulder_tilt_start_time is not None}")
-            
             if tilt_exceeds_threshold:
                 # Check if this is a new tilt or continuation
                 if self._shoulder_tilt_start_time is None:
                     # Just started tilting - record start time
                     self._shoulder_tilt_start_time = current_time
-                    print(f"[DEBUG] Started shoulder tilt timer at {current_time}")
                 
                 # Calculate how long tilt has been sustained
                 tilt_duration = current_time - self._shoulder_tilt_start_time
-                print(f"[DEBUG] Tilt sustained for {tilt_duration:.1f}s (need {self._shoulder_tilt_sustained_seconds}s)")
                 
                 # Only add to reasons if tilt sustained for required duration
                 if tilt_duration >= self._shoulder_tilt_sustained_seconds:
                     reasons.append('shoulder_tilt')
-                    print(f"[DEBUG] Added shoulder_tilt to reasons!")
             else:
                 # No longer tilting (or within threshold), reset timer
                 if self._shoulder_tilt_start_time is not None:
-                    print(f"[DEBUG] Reset shoulder tilt timer (tilt no longer exceeds threshold)")
+                    pass
                 self._shoulder_tilt_start_time = None
         
         # Check body lean (horizontal offset of shoulders from face)
