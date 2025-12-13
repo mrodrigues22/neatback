@@ -90,12 +90,12 @@ THRESHOLDS = {
         'exit_bad': -8
     },
     'distance': {
-        'enter_bad': 10,
-        'exit_bad': 8
+        'enter_bad': 8,
+        'exit_bad': 5
     },
     'head_roll': {
-        'enter_bad': 15,
-        'exit_bad': 12
+        'enter_bad': 8,
+        'exit_bad': 5
     },
     'shoulder_tilt': {
         'enter_bad': 5,

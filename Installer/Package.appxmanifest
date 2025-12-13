@@ -9,7 +9,7 @@
   <Identity
     Name="AlmeidaRodrigues.Slouti"
     Publisher="CN=D7ED7EE7-206B-4F02-8072-AA7B60504A07"
-    Version="1.0.20.0" />
+    Version="1.0.23.0" />
 
   <Properties>
     <DisplayName>Slouti</DisplayName>
