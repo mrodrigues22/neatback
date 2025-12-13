@@ -1,4 +1,6 @@
 import time
+from state_debouncer import StateDebouncer
+from config import GOOD_TO_BAD_FRAMES, BAD_TO_GOOD_FRAMES, INITIAL_WARNING_SECONDS, REPEAT_WARNING_INTERVAL
 
 class PostureAnalyzer:
     def __init__(self):
@@ -12,9 +14,17 @@ class PostureAnalyzer:
         self.longest_good_streak = 0
         self.good_posture_start = time.time()
         
-        # Warning thresholds (in seconds)
-        self.initial_warning_seconds = 10
-        self.repeat_warning_interval = 20
+        # Warning thresholds (in seconds) - from config
+        self.initial_warning_seconds = INITIAL_WARNING_SECONDS
+        self.repeat_warning_interval = REPEAT_WARNING_INTERVAL
+        
+        # Add state debouncer
+        # - Need 2 consecutive bad frames to start bad posture
+        # - Need 3 consecutive good frames to end bad posture
+        self.debouncer = StateDebouncer(
+            bad_to_good_frames=BAD_TO_GOOD_FRAMES,
+            good_to_bad_frames=GOOD_TO_BAD_FRAMES
+        )
     
     def _generate_warning_message(self, issues, duration):
         """Generate specific warning message based on posture issues."""
@@ -63,7 +73,13 @@ class PostureAnalyzer:
             }
         """
         current_time = time.time()
-        is_bad = posture_status.get('is_bad', False)
+        
+        # Get raw detection
+        detected_is_bad = posture_status.get('is_bad', False)
+        
+        # Apply debouncing to get stable state
+        is_bad = self.debouncer.update(detected_is_bad)
+        
         issues = posture_status.get('posture_issues', [])
         
         if is_bad:
@@ -167,3 +183,4 @@ class PostureAnalyzer:
         self.bad_posture_duration = 0
         self.good_posture_start = time.time()
         self.warning_sent_at.clear()
+        self.debouncer.reset()

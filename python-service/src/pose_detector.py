@@ -4,6 +4,8 @@ import numpy as np
 import os
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+from smoothing_filter import SmoothingFilter
+from config import SMOOTHING_WINDOW_SIZE, THRESHOLDS
 
 class PostureDetector:
     def __init__(self):
@@ -57,6 +59,15 @@ class PostureDetector:
         self.good_head_distance = None
         self.good_head_roll = None
         self.good_shoulder_tilt = None
+        
+        # Add smoothing filter (window of 5 frames = ~0.25s at 20 FPS)
+        self.smoothing_filter = SmoothingFilter(window_size=SMOOTHING_WINDOW_SIZE)
+        
+        # Track current state for hysteresis
+        self.is_currently_bad = False
+        
+        # Hysteresis thresholds
+        self.thresholds = THRESHOLDS
         
         # Configurable thresholds
         self.pitch_threshold = -15  # degrees (negative = looking down)
@@ -416,6 +427,12 @@ class PostureDetector:
             self.good_head_roll = eye_roll if eye_roll is not None else 0
             self.good_head_distance = distance
             self.good_shoulder_tilt = shoulder_tilt if shoulder_tilt is not None else 0
+            
+            # Reset smoothing filter to start fresh
+            self.smoothing_filter.reset()
+            # Reset hysteresis state
+            self.is_currently_bad = False
+            
             return True
         
         return False
@@ -467,6 +484,18 @@ class PostureDetector:
         if pose_landmarks:
             shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
         
+        # Add to smoothing filter
+        self.smoothing_filter.add_measurement(pitch, eye_roll, shoulder_tilt, distance)
+        
+        # Get smoothed values
+        smoothed = self.smoothing_filter.get_smoothed_values()
+        
+        # Use smoothed values for detection if available, otherwise raw
+        pitch_smoothed = smoothed['pitch'] if smoothed['pitch'] is not None else pitch
+        eye_roll_smoothed = smoothed['roll'] if smoothed['roll'] is not None else eye_roll
+        shoulder_tilt_smoothed = smoothed['shoulder_tilt'] if smoothed['shoulder_tilt'] is not None else shoulder_tilt
+        distance_smoothed = smoothed['distance'] if smoothed['distance'] is not None else distance
+        
         # Compute face bbox for drawing
         face_bbox = self.get_face_bbox(face_landmarks, frame.shape)
 
@@ -486,17 +515,17 @@ class PostureDetector:
                 'error': 'No baseline posture saved'
             }
         
-        # Calculate adjusted values relative to baseline
-        adjusted_pitch = pitch - self.good_head_pitch_angle
-        adjusted_roll = eye_roll - self.good_head_roll if eye_roll is not None and self.good_head_roll is not None else 0
-        adjusted_shoulder_tilt = shoulder_tilt - self.good_shoulder_tilt if shoulder_tilt is not None and self.good_shoulder_tilt is not None else 0
+        # Calculate adjusted values relative to baseline (using smoothed values)
+        adjusted_pitch = pitch_smoothed - self.good_head_pitch_angle
+        adjusted_roll = eye_roll_smoothed - self.good_head_roll if eye_roll_smoothed is not None and self.good_head_roll is not None else 0
+        adjusted_shoulder_tilt = shoulder_tilt_smoothed - self.good_shoulder_tilt if shoulder_tilt_smoothed is not None and self.good_shoulder_tilt is not None else 0
         
-        # Determine if posture is bad
+        # Determine if posture is bad (using smoothed measurements)
         is_bad, issues = self._is_posture_bad(
             adjusted_pitch, 
             adjusted_roll, 
             adjusted_shoulder_tilt,
-            distance, 
+            distance_smoothed, 
             self.good_head_distance,
             yaw  # Pass yaw to check if head is rotated
         )
@@ -517,22 +546,60 @@ class PostureDetector:
             'face_bbox': face_bbox
         }
     
+    def _check_threshold_with_hysteresis(self, value, threshold_config, is_lower_bad=True):
+        """
+        Check if value violates threshold with hysteresis.
+        
+        Args:
+            value: Current measurement value
+            threshold_config: Dict with 'enter_bad' and 'exit_bad' thresholds
+            is_lower_bad: True if lower values are bad (like pitch), 
+                          False if higher values are bad (like distance deviation)
+        
+        Returns:
+            bool: True if threshold is violated
+        """
+        enter_threshold = threshold_config['enter_bad']
+        exit_threshold = threshold_config['exit_bad']
+        
+        if self.is_currently_bad:
+            # Already in bad state, use exit threshold (more lenient)
+            if is_lower_bad:
+                return value < exit_threshold
+            else:
+                return abs(value) > exit_threshold
+        else:
+            # In good state, use enter threshold (stricter)
+            if is_lower_bad:
+                return value < enter_threshold
+            else:
+                return abs(value) > enter_threshold
+    
     def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance, yaw=None):
-        """Determine if current posture is bad based on thresholds.
+        """Determine if current posture is bad based on thresholds with hysteresis.
         
         Returns:
             tuple: (is_bad, reasons)
         """
         reasons = []
         
-        # Check pitch (looking down) - only trigger for negative pitch (looking down)
-        # Don't use abs() to avoid false positives from smiling which can move landmarks upward
-        if adjusted_pitch is not None and adjusted_pitch < self.pitch_threshold:
-            reasons.append('head_pitch')
+        # Check pitch with hysteresis (looking down)
+        if adjusted_pitch is not None:
+            if self._check_threshold_with_hysteresis(
+                adjusted_pitch, 
+                self.thresholds['pitch'], 
+                is_lower_bad=True
+            ):
+                reasons.append('head_pitch')
         
-        # Check distance (leaning forward)
+        # Check distance with hysteresis (leaning forward)
         if good_distance is not None and current_distance is not None:
-            if (good_distance - current_distance) > self.distance_threshold:
+            distance_deviation = good_distance - current_distance
+            if self._check_threshold_with_hysteresis(
+                distance_deviation,
+                self.thresholds['distance'],
+                is_lower_bad=False
+            ):
                 reasons.append('distance')
         
         # Only check roll/tilt if head is not rotated significantly
@@ -540,13 +607,23 @@ class PostureDetector:
         head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
         if head_is_facing_forward:
-            # Check head roll (head tilted sideways)
-            if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
-                reasons.append('head_roll')
+            # Check head roll with hysteresis (head tilted sideways)
+            if adjusted_roll is not None:
+                if self._check_threshold_with_hysteresis(
+                    adjusted_roll,
+                    self.thresholds['head_roll'],
+                    is_lower_bad=False
+                ):
+                    reasons.append('head_roll')
             
-            # Check shoulder tilt (body tilted sideways) - ALWAYS check this
-            if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
-                reasons.append('shoulder_tilt')
+            # Check shoulder tilt with hysteresis (body tilted sideways)
+            if adjusted_shoulder_tilt is not None:
+                if self._check_threshold_with_hysteresis(
+                    adjusted_shoulder_tilt,
+                    self.thresholds['shoulder_tilt'],
+                    is_lower_bad=False
+                ):
+                    reasons.append('shoulder_tilt')
             
             # Check for compensation pattern (for informational purposes)
             is_compensating, compensation_desc = self._detect_compensation(
@@ -560,6 +637,10 @@ class PostureDetector:
                 self._last_compensation_desc = None
         
         is_bad = len(reasons) > 0
+        
+        # Update hysteresis state for next check
+        self.is_currently_bad = is_bad
+        
         return is_bad, reasons
     
     def close(self):

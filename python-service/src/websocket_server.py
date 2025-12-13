@@ -215,11 +215,8 @@ class WebSocketServer:
                     }
                 })
                 
-                # Process at ~20 FPS for smoother preview (reduced from 10 FPS)
+                # Process at ~20 FPS for smoother preview (50ms per frame)
                 await asyncio.sleep(0.05)
-                
-                # Process at ~10 FPS for smoother preview
-                await asyncio.sleep(0.1)
         
         except asyncio.CancelledError:
             print("Monitoring loop cancelled")
