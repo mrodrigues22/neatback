@@ -7,9 +7,32 @@ SMOOTHING_WINDOW_SIZE = 5  # Number of frames to average (5 = ~0.17s at 30 FPS)
 GOOD_TO_BAD_FRAMES = 2     # Frames needed to detect bad posture
 BAD_TO_GOOD_FRAMES = 3     # Frames needed to return to good posture
 
-# Sensitivity Scale Functions (1-5 scale: 1=Low/Lenient, 5=High/Strict)
-def scale_to_pitch_threshold(scale: int) -> tuple[float, float]:
-    """Convert 1-5 scale to pitch threshold (enter_bad, exit_bad)"""
+# Sensitivity Scale Functions (1.0-5.0 continuous scale: 1=Low/Lenient, 5=High/Strict)
+def _interpolate_threshold(scale: float, mapping: dict) -> tuple[float, float]:
+    """Interpolate threshold values between discrete scale points"""
+    # Clamp scale to valid range
+    scale = max(1.0, min(5.0, scale))
+    
+    # If scale is exactly an integer, return the exact mapping
+    if scale == int(scale):
+        return mapping[int(scale)]
+    
+    # Interpolate between two adjacent integer values
+    lower = int(scale)
+    upper = lower + 1
+    fraction = scale - lower
+    
+    lower_enter, lower_exit = mapping[lower]
+    upper_enter, upper_exit = mapping[upper]
+    
+    # Linear interpolation
+    enter_bad = lower_enter + (upper_enter - lower_enter) * fraction
+    exit_bad = lower_exit + (upper_exit - lower_exit) * fraction
+    
+    return (enter_bad, exit_bad)
+
+def scale_to_pitch_threshold(scale: float) -> tuple[float, float]:
+    """Convert 1.0-5.0 continuous scale to pitch threshold (enter_bad, exit_bad)"""
     mapping = {
         1: (-20, -16),  # Very lenient - rarely triggers
         2: (-15, -12),  # Lenient - only severe forward head
@@ -17,10 +40,10 @@ def scale_to_pitch_threshold(scale: int) -> tuple[float, float]:
         4: (-7, -5),    # Strict - triggers easily
         5: (-5, -3)     # Very strict - very sensitive
     }
-    return mapping.get(scale, (-10, -8))
+    return _interpolate_threshold(scale, mapping)
 
-def scale_to_distance_threshold(scale: int) -> tuple[float, float]:
-    """Convert 1-5 scale to distance threshold in cm (enter_bad, exit_bad)"""
+def scale_to_distance_threshold(scale: float) -> tuple[float, float]:
+    """Convert 1.0-5.0 continuous scale to distance threshold in cm (enter_bad, exit_bad)"""
     mapping = {
         1: (15, 12),    # Very lenient - must lean far forward
         2: (12, 10),    # Lenient
@@ -28,10 +51,10 @@ def scale_to_distance_threshold(scale: int) -> tuple[float, float]:
         4: (8, 6),      # Strict
         5: (6, 4)       # Very strict - very sensitive
     }
-    return mapping.get(scale, (10, 8))
+    return _interpolate_threshold(scale, mapping)
 
-def scale_to_head_roll_threshold(scale: int) -> tuple[float, float]:
-    """Convert 1-5 scale to head roll threshold in degrees (enter_bad, exit_bad)"""
+def scale_to_head_roll_threshold(scale: float) -> tuple[float, float]:
+    """Convert 1.0-5.0 continuous scale to head roll threshold in degrees (enter_bad, exit_bad)"""
     mapping = {
         1: (25, 20),    # Very lenient - only extreme tilts
         2: (20, 16),    # Lenient
@@ -39,10 +62,10 @@ def scale_to_head_roll_threshold(scale: int) -> tuple[float, float]:
         4: (12, 9),     # Strict
         5: (1, 0.5)     # Very strict - very sensitive (triggers at ±1°)
     }
-    return mapping.get(scale, (15, 12))
+    return _interpolate_threshold(scale, mapping)
 
-def scale_to_shoulder_tilt_threshold(scale: int) -> tuple[float, float]:
-    """Convert 1-5 scale to shoulder tilt threshold in degrees (enter_bad, exit_bad)"""
+def scale_to_shoulder_tilt_threshold(scale: float) -> tuple[float, float]:
+    """Convert 1.0-5.0 continuous scale to shoulder tilt threshold in degrees (enter_bad, exit_bad)"""
     mapping = {
         1: (10, 7),     # Very lenient - only major imbalances
         2: (7, 5),      # Lenient
@@ -50,7 +73,7 @@ def scale_to_shoulder_tilt_threshold(scale: int) -> tuple[float, float]:
         4: (4, 2),      # Strict
         5: (1, 0.5)     # Very strict - very sensitive (triggers at ±1°)
     }
-    return mapping.get(scale, (5, 3))
+    return _interpolate_threshold(scale, mapping)
 
 # Default sensitivity scales (1-5, where 3 is medium/default)
 DEFAULT_SCALES = {
@@ -85,9 +108,9 @@ THRESHOLDS = {
 }
 
 # Update thresholds from scale function
-def update_thresholds_from_scales(pitch_scale: int = 3, distance_scale: int = 3, 
-                                   head_roll_scale: int = 3, shoulder_tilt_scale: int = 3):
-    """Update THRESHOLDS dict based on sensitivity scales"""
+def update_thresholds_from_scales(pitch_scale: float = 3.0, distance_scale: float = 3.0, 
+                                   head_roll_scale: float = 3.0, shoulder_tilt_scale: float = 3.0):
+    """Update THRESHOLDS dict based on sensitivity scales (accepts float values 1.0-5.0)"""
     pitch_enter, pitch_exit = scale_to_pitch_threshold(pitch_scale)
     dist_enter, dist_exit = scale_to_distance_threshold(distance_scale)
     roll_enter, roll_exit = scale_to_head_roll_threshold(head_roll_scale)

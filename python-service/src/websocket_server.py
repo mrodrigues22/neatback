@@ -85,17 +85,17 @@ class WebSocketServer:
                     }))
             
             elif msg_type == 'set_thresholds':
-                # Update thresholds using sensitivity scales (1-5)
+                # Update thresholds using sensitivity scales (1.0-5.0 continuous)
                 # Python service is the single source of truth for threshold mappings
                 if self.detector:
                     from config import (scale_to_pitch_threshold, scale_to_distance_threshold,
                                        scale_to_head_roll_threshold, scale_to_shoulder_tilt_threshold)
                     
-                    # Get sensitivity scales (1-5) from message
-                    pitch_scale = data.get('pitch_scale', 3)
-                    distance_scale = data.get('distance_scale', 3)
-                    head_roll_scale = data.get('head_roll_scale', 3)
-                    shoulder_tilt_scale = data.get('shoulder_tilt_scale', 3)
+                    # Get sensitivity scales (1.0-5.0 continuous) from message
+                    pitch_scale = float(data.get('pitch_scale', 3.0))
+                    distance_scale = float(data.get('distance_scale', 3.0))
+                    head_roll_scale = float(data.get('head_roll_scale', 3.0))
+                    shoulder_tilt_scale = float(data.get('shoulder_tilt_scale', 3.0))
                     
                     # Convert scales to threshold values using config functions
                     pitch_enter, pitch_exit = scale_to_pitch_threshold(pitch_scale)

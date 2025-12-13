@@ -1,48 +1,48 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AppInstaller
 	Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer.appinstaller"
-	Version="1.0.17.0" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
+	Version="1.0.18.0" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
 	<MainBundle
 		Name="48c93fc2-9b96-4910-9c1d-fc7ccea57b9d"
-		Version="1.0.17.0"
+		Version="1.0.18.0"
 		Publisher="CN=Mateus Rodrigues"
-		Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Installer_1.0.17.0_x86_x64.msixbundle" />
+		Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Installer_1.0.18.0_x86_x64.msixbundle" />
 	<Dependencies>
 		<Package
 			Name="Microsoft.WindowsAppRuntime.1.8"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x86"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x86/Microsoft.WindowsAppRuntime.1.8.msix"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x86/Microsoft.WindowsAppRuntime.1.8.msix"
 			Version="8000.675.1142.0" />
 		<Package
 			Name="Microsoft.WindowsAppRuntime.1.8"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x64"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x64/Microsoft.WindowsAppRuntime.1.8.msix"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x64/Microsoft.WindowsAppRuntime.1.8.msix"
 			Version="8000.675.1142.0" />
 		<Package
 			Name="Microsoft.VCLibs.140.00.UWPDesktop"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x64"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x64/Microsoft.VCLibs.x64.14.00.Desktop.appx"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x64/Microsoft.VCLibs.x64.14.00.Desktop.appx"
 			Version="14.0.33728.0" />
 		<Package
 			Name="Microsoft.VCLibs.140.00.UWPDesktop"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x86"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x86/Microsoft.VCLibs.x86.14.00.Desktop.appx"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x86/Microsoft.VCLibs.x86.14.00.Desktop.appx"
 			Version="14.0.33728.0" />
 		<Package
 			Name="Microsoft.VCLibs.140.00"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x64"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x64/Microsoft.VCLibs.x64.14.00.appx"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x64/Microsoft.VCLibs.x64.14.00.appx"
 			Version="14.0.33519.0" />
 		<Package
 			Name="Microsoft.VCLibs.140.00"
 			Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
 			ProcessorArchitecture="x86"
-			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.17.0_Test/Dependencies/x86/Microsoft.VCLibs.x86.14.00.appx"
+			Uri="file:///C:/Users/vlnco/OneDrive - Corteva/Documents/Apps/slouti/Installer_1.0.18.0_Test/Dependencies/x86/Microsoft.VCLibs.x86.14.00.appx"
 			Version="14.0.33519.0" />
 	</Dependencies>
 	<UpdateSettings>

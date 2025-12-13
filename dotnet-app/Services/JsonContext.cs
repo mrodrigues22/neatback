@@ -34,10 +34,10 @@ public class SavePostureMessage
 public class SetThresholdsMessage
 {
     public string type { get; set; } = "set_thresholds";
-    public int pitch_scale { get; set; }
-    public int distance_scale { get; set; }
-    public int head_roll_scale { get; set; }
-    public int shoulder_tilt_scale { get; set; }
+    public double pitch_scale { get; set; }
+    public double distance_scale { get; set; }
+    public double head_roll_scale { get; set; }
+    public double shoulder_tilt_scale { get; set; }
 }
 
 public class GetStatisticsMessage

@@ -57,71 +57,11 @@ public sealed partial class MainPage : Page
     private Button? _hideAdvancedButton;
     private bool _isUpdatingSliders = false;
     
-    // Helper method to convert scale (1-5) to label
-    private string ScaleToLabel(int scale)
+    // Helper method to format scale value for display
+    private string ScaleToLabel(double scale)
     {
-        return scale switch
-        {
-            1 => "Low",
-            2 => "Medium-Low",
-            3 => "Medium",
-            4 => "Medium-High",
-            5 => "High",
-            _ => "Medium"
-        };
-    }
-    
-    // Helper methods to convert scale (1-5) to actual threshold values
-    private (double enterBad, double exitBad) ScaleToPitchThreshold(int scale)
-    {
-        return scale switch
-        {
-            1 => (-20, -16),
-            2 => (-15, -12),
-            3 => (-10, -8),
-            4 => (-7, -5),
-            5 => (-5, -3),
-            _ => (-10, -8)
-        };
-    }
-    
-    private (double enterBad, double exitBad) ScaleToDistanceThreshold(int scale)
-    {
-        return scale switch
-        {
-            1 => (15, 12),
-            2 => (12, 10),
-            3 => (10, 8),
-            4 => (8, 6),
-            5 => (6, 4),
-            _ => (10, 8)
-        };
-    }
-    
-    private (double enterBad, double exitBad) ScaleToHeadRollThreshold(int scale)
-    {
-        return scale switch
-        {
-            1 => (25, 20),
-            2 => (20, 16),
-            3 => (15, 12),
-            4 => (12, 9),
-            5 => (1, 0.5),
-            _ => (15, 12)
-        };
-    }
-    
-    private (double enterBad, double exitBad) ScaleToShoulderTiltThreshold(int scale)
-    {
-        return scale switch
-        {
-            1 => (10, 7),
-            2 => (7, 5),
-            3 => (5, 3),
-            4 => (4, 2),
-            5 => (1, 0.5),
-            _ => (5, 3)
-        };
+        // Format to one decimal place
+        return $"{scale:F1}";
     }
     
     public MainPage()
@@ -554,11 +494,11 @@ public sealed partial class MainPage : Page
         if (!_isMonitoring)
             return;
         
-        // Get scale values (1-5) from sliders
-        var pitchScale = _pitchThresholdSlider != null ? (int)_pitchThresholdSlider.Value : 3;
-        var distanceScale = _distanceThresholdSlider != null ? (int)_distanceThresholdSlider.Value : 3;
-        var headRollScale = _headRollThresholdSlider != null ? (int)_headRollThresholdSlider.Value : 3;
-        var shoulderTiltScale = _shoulderTiltThresholdSlider != null ? (int)_shoulderTiltThresholdSlider.Value : 3;
+        // Get scale values (1.0-5.0) from sliders
+        var pitchScale = _pitchThresholdSlider != null ? _pitchThresholdSlider.Value : 3.0;
+        var distanceScale = _distanceThresholdSlider != null ? _distanceThresholdSlider.Value : 3.0;
+        var headRollScale = _headRollThresholdSlider != null ? _headRollThresholdSlider.Value : 3.0;
+        var shoulderTiltScale = _shoulderTiltThresholdSlider != null ? _shoulderTiltThresholdSlider.Value : 3.0;
         
         // Update UI labels with sensitivity levels
         if (_pitchThresholdValue != null)
@@ -610,7 +550,7 @@ public sealed partial class MainPage : Page
         if (_isUpdatingSliders || _overallSensitivitySlider == null)
             return;
         
-        int overallScale = (int)_overallSensitivitySlider.Value;
+        double overallScale = _overallSensitivitySlider.Value;
         
         // Update label
         if (_overallSensitivityValue != null)

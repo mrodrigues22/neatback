@@ -190,7 +190,7 @@ public class WebSocketClient
         );
     }
     
-    public async Task SetThresholdsAsync(int pitchScale, int distanceScale, int headRollScale = 3, int shoulderTiltScale = 3)
+    public async Task SetThresholdsAsync(double pitchScale, double distanceScale, double headRollScale = 3.0, double shoulderTiltScale = 3.0)
     {
         if (_ws?.State != WebSocketState.Open)
             return;
