@@ -204,7 +204,11 @@ public sealed partial class MainPage : Page
                     await stream.WriteAsync(imageBytes.AsBuffer());
                     stream.Seek(0);
                     
-                    var bitmapImage = new BitmapImage();
+                    // Optimize bitmap creation with DecodePixelWidth for faster rendering
+                    var bitmapImage = new BitmapImage
+                    {
+                        DecodePixelWidth = 640  // Match preview frame size for optimal performance
+                    };
                     await bitmapImage.SetSourceAsync(stream);
                     _cameraPreview.Source = bitmapImage;
                 }

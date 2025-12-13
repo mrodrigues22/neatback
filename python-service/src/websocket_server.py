@@ -169,13 +169,13 @@ class WebSocketServer:
                 ret, frame = self.camera.read()
                 if not ret:
                     print("Failed to read frame")
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.033)  # ~30 FPS retry
                     continue
                 
                 # Get timestamp
                 timestamp_ms = int(time.time() * 1000)
                 
-                # Analyze posture
+                # Analyze posture on every frame
                 posture_status = self.detector.check_posture(frame, timestamp_ms)
 
                 # Draw face bounding box on the frame if available
@@ -187,11 +187,11 @@ class WebSocketServer:
                 # Update analyzer
                 analysis = self.analyzer.update(posture_status)
                 
-                # Resize frame for preview (reduces data transfer significantly)
-                preview_frame = cv2.resize(frame, (640, 360))
+                # Resize frame for preview - smaller size reduces encoding/decoding CPU time
+                preview_frame = cv2.resize(frame, (640, 360), interpolation=cv2.INTER_LINEAR)
                 
-                # Encode frame to JPEG with lower quality for preview
-                _, buffer = cv2.imencode('.jpg', preview_frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
+                # Encode frame to JPEG - quality can be higher for localhost
+                _, buffer = cv2.imencode('.jpg', preview_frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 frame_base64 = base64.b64encode(buffer).decode('utf-8')
                 
                 # Send results to all clients
@@ -214,6 +214,9 @@ class WebSocketServer:
                         'frame': frame_base64
                     }
                 })
+                
+                # Process at ~20 FPS for smoother preview (reduced from 10 FPS)
+                await asyncio.sleep(0.05)
                 
                 # Process at ~10 FPS for smoother preview
                 await asyncio.sleep(0.1)

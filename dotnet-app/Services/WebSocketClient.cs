@@ -88,6 +88,14 @@ public class WebSocketClient
                     }
                     break;
                 
+                case "preview_frame":
+                    // Handle preview-only frames (no posture data, just video)
+                    if (message.data != null)
+                    {
+                        PostureDataReceived?.Invoke(this, message.data);
+                    }
+                    break;
+                
                 case "posture_saved":
                     PostureSaved?.Invoke(this, message.success);
                     break;
