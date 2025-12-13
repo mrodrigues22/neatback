@@ -540,24 +540,24 @@ class PostureDetector:
         head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
         if head_is_facing_forward:
-            # Check for compensation pattern FIRST (before individual checks)
+            # Check head roll (head tilted sideways)
+            if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
+                reasons.append('head_roll')
+            
+            # Check shoulder tilt (body tilted sideways) - ALWAYS check this
+            if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
+                reasons.append('shoulder_tilt')
+            
+            # Check for compensation pattern (for informational purposes)
             is_compensating, compensation_desc = self._detect_compensation(
                 adjusted_roll, adjusted_shoulder_tilt
             )
             
             if is_compensating:
-                reasons.append('body_compensation')
                 # Store compensation description for warning message
                 self._last_compensation_desc = compensation_desc
             else:
-                # Only check individual thresholds if no compensation detected
-                # Check head roll (head tilted sideways)
-                if adjusted_roll is not None and abs(adjusted_roll) > self.head_roll_threshold:
-                    reasons.append('head_roll')
-                
-                # Check shoulder tilt (body tilted sideways)
-                if adjusted_shoulder_tilt is not None and abs(adjusted_shoulder_tilt) > self.shoulder_tilt_threshold:
-                    reasons.append('shoulder_tilt')
+                self._last_compensation_desc = None
         
         is_bad = len(reasons) > 0
         return is_bad, reasons
