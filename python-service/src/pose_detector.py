@@ -86,6 +86,11 @@ class PostureDetector:
         # Track last compensation description for messaging
         self._last_compensation_desc = None
         
+        # Track sustained tilt duration to avoid false positives
+        self._shoulder_tilt_start_time = None
+        self._shoulder_tilt_sustained_seconds = 3  # Require 3 seconds of sustained tilt
+        self._shoulder_tilt_sustained_seconds = 3  # Require 3 seconds of sustained tilt
+        
         # 3D face model coordinates (in mm)
         # Using stable landmarks that don't move with facial expressions (smiling, etc.)
         self.face_3d_model = np.array([
@@ -679,6 +684,8 @@ class PostureDetector:
         # This prevents false positives when user is looking left/right
         head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
+        print(f"[DEBUG] head_is_facing_forward={head_is_facing_forward}, yaw={yaw if yaw else 'None'}, yaw_threshold={self.yaw_threshold}")
+        
         if head_is_facing_forward:
             # Check distance with hysteresis (leaning forward)
             # Distance detection using IPD is only reliable when facing camera
@@ -701,22 +708,60 @@ class PostureDetector:
                     reasons.append('head_roll')
             
             # Check shoulder tilt with hysteresis (body tilted sideways)
+            # Requires sustained tilt to avoid false positives from temporary movements
             if adjusted_shoulder_tilt is not None:
-                if self._check_threshold_with_hysteresis(
+                tilt_exceeds_threshold = self._check_threshold_with_hysteresis(
                     adjusted_shoulder_tilt,
                     self.thresholds['shoulder_tilt'],
                     is_lower_bad=False
-                ):
-                    reasons.append('shoulder_tilt')
+                )
+                
+                # Track sustained tilt duration
+                import time
+                current_time = time.time()
+                
+                # Debug logging for shoulder tilt
+                print(f"[DEBUG] Shoulder tilt check: adjusted={adjusted_shoulder_tilt:.2f}°, " 
+                      f"abs={abs(adjusted_shoulder_tilt):.2f}°, "
+                      f"threshold={self.thresholds['shoulder_tilt']['enter_bad']}°, "
+                      f"exceeds={tilt_exceeds_threshold}, "
+                      f"timer_started={self._shoulder_tilt_start_time is not None}")
+                
+                if tilt_exceeds_threshold:
+                    # Check if this is a new tilt or continuation
+                    if self._shoulder_tilt_start_time is None:
+                        # Just started tilting - record start time
+                        self._shoulder_tilt_start_time = current_time
+                        print(f"[DEBUG] Started shoulder tilt timer at {current_time}")
+                    
+                    # Calculate how long tilt has been sustained
+                    tilt_duration = current_time - self._shoulder_tilt_start_time
+                    print(f"[DEBUG] Tilt sustained for {tilt_duration:.1f}s (need {self._shoulder_tilt_sustained_seconds}s)")
+                    
+                    # Only add to reasons if tilt sustained for required duration
+                    if tilt_duration >= self._shoulder_tilt_sustained_seconds:
+                        reasons.append('shoulder_tilt')
+                        print(f"[DEBUG] Added shoulder_tilt to reasons!")
+                else:
+                    # No longer tilting (or within threshold), reset timer
+                    if self._shoulder_tilt_start_time is not None:
+                        print(f"[DEBUG] Reset shoulder tilt timer (tilt no longer exceeds threshold)")
+                    self._shoulder_tilt_start_time = None
             
             # Check body lean (horizontal offset of shoulders from face)
-            if adjusted_body_lean is not None:
-                if self._check_threshold_with_hysteresis(
-                    adjusted_body_lean,
-                    self.thresholds['body_lean'],
-                    is_lower_bad=False
-                ):
-                    reasons.append('body_lean')
+            # DISABLED: This method is unreliable due to:
+            # 1. Head compensation - users naturally center head while body leans
+            # 2. Camera angle sensitivity - false positives from off-center cameras
+            # 3. Depth dependency - measurements vary with distance
+            # Body lean is better detected through shoulder_tilt (see below)
+            #
+            # if adjusted_body_lean is not None:
+            #     if self._check_threshold_with_hysteresis(
+            #         adjusted_body_lean,
+            #         self.thresholds['body_lean'],
+            #         is_lower_bad=False
+            #     ):
+            #         reasons.append('body_lean')
             
             # Check for compensation pattern (for informational purposes)
             is_compensating, compensation_desc = self._detect_compensation(

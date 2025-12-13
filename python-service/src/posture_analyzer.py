@@ -33,14 +33,14 @@ class PostureAnalyzer:
         
         # Special case: If compensation detected, make it primary message
         if 'body_compensation' in issues:
-            return "⚠️ Bad posture: compensating body tilt with head tilt"
+            return "⚠️ Bad posture: body leaning sideways (you're compensating with head tilt)"
         
         issue_descriptions = {
             'head_pitch': 'head tilted down',
             'distance': 'leaning too close',
             'head_roll': 'head tilted sideways',
-            'shoulder_tilt': 'shoulders uneven',
-            'body_lean': 'body leaning to the side'
+            'shoulder_tilt': 'body leaning sideways (shoulders tilted)',
+            'body_lean': 'body leaning to the side (deprecated method)'
         }
         
         messages = [issue_descriptions[issue] for issue in issues if issue in issue_descriptions]

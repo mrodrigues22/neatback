@@ -87,10 +87,24 @@ class WebSocketServer:
             elif msg_type == 'set_thresholds':
                 # Update thresholds
                 if self.detector:
-                    self.detector.pitch_threshold = data.get('pitch_threshold', -10)
-                    self.detector.distance_threshold = data.get('distance_threshold', 10)
-                    self.detector.head_roll_threshold = data.get('head_roll_threshold', 15)
-                    self.detector.shoulder_tilt_threshold = data.get('shoulder_tilt_threshold', 10)
+                    # Update the actual thresholds dictionary that's used for detection
+                    # Note: These are 'enter_bad' thresholds. 'exit_bad' is auto-calculated as 80% of enter
+                    pitch_val = data.get('pitch_threshold', -10)
+                    self.detector.thresholds['pitch']['enter_bad'] = pitch_val
+                    self.detector.thresholds['pitch']['exit_bad'] = pitch_val * 0.8
+                    
+                    distance_val = data.get('distance_threshold', 10)
+                    self.detector.thresholds['distance']['enter_bad'] = distance_val
+                    self.detector.thresholds['distance']['exit_bad'] = distance_val * 0.8
+                    
+                    head_roll_val = data.get('head_roll_threshold', 15)
+                    self.detector.thresholds['head_roll']['enter_bad'] = head_roll_val
+                    self.detector.thresholds['head_roll']['exit_bad'] = head_roll_val * 0.8
+                    
+                    shoulder_tilt_val = data.get('shoulder_tilt_threshold', 10)
+                    self.detector.thresholds['shoulder_tilt']['enter_bad'] = shoulder_tilt_val
+                    self.detector.thresholds['shoulder_tilt']['exit_bad'] = shoulder_tilt_val * 0.6
+                    
                     await websocket.send(json.dumps({
                         'type': 'thresholds_updated',
                         'success': True

@@ -22,8 +22,8 @@ THRESHOLDS = {
         'exit_bad': 12       # Must be <12° to exit bad
     },
     'shoulder_tilt': {
-        'enter_bad': 10,     # Must tilt >10° to start bad
-        'exit_bad': 8        # Must be <8° to exit bad
+        'enter_bad': 5,      # Most body leans produce 5-8° shoulder tilt
+        'exit_bad': 3        # Exit threshold prevents flapping
     },
     'body_lean': {
         'enter_bad': 3.0,    # Shoulder offset > 3% of frame width to start bad
