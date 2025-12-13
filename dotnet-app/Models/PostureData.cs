@@ -37,6 +37,12 @@ public class PostureData
     [JsonPropertyName("adjusted_shoulder_tilt")]
     public double? AdjustedShoulderTilt { get; set; }
     
+    [JsonPropertyName("body_lean_offset")]
+    public double? BodyLeanOffset { get; set; }
+    
+    [JsonPropertyName("adjusted_body_lean")]
+    public double? AdjustedBodyLean { get; set; }
+    
     [JsonPropertyName("posture_issues")]
     public List<string>? PostureIssues { get; set; }
     

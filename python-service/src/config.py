@@ -24,6 +24,10 @@ THRESHOLDS = {
     'shoulder_tilt': {
         'enter_bad': 10,     # Must tilt >10° to start bad
         'exit_bad': 8        # Must be <8° to exit bad
+    },
+    'body_lean': {
+        'enter_bad': 3.0,    # Shoulder offset > 3% of frame width to start bad
+        'exit_bad': 2.0      # Must be < 2% to exit bad
     }
 }
 

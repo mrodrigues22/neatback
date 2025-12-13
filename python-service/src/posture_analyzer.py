@@ -39,7 +39,8 @@ class PostureAnalyzer:
             'head_pitch': 'head tilted down',
             'distance': 'leaning too close',
             'head_roll': 'head tilted sideways',
-            'shoulder_tilt': 'shoulders uneven'
+            'shoulder_tilt': 'shoulders uneven',
+            'body_lean': 'body leaning to the side'
         }
         
         messages = [issue_descriptions[issue] for issue in issues if issue in issue_descriptions]

@@ -15,9 +15,10 @@ class SmoothingFilter:
         self.pitch_buffer = deque(maxlen=window_size)
         self.roll_buffer = deque(maxlen=window_size)
         self.shoulder_buffer = deque(maxlen=window_size)
+        self.body_lean_offset_buffer = deque(maxlen=window_size)
         self.distance_buffer = deque(maxlen=window_size)
     
-    def add_measurement(self, pitch, roll, shoulder_tilt, distance):
+    def add_measurement(self, pitch, roll, shoulder_tilt, body_lean_offset, distance):
         """Add new measurements to the buffers."""
         if pitch is not None:
             self.pitch_buffer.append(pitch)
@@ -25,6 +26,8 @@ class SmoothingFilter:
             self.roll_buffer.append(roll)
         if shoulder_tilt is not None:
             self.shoulder_buffer.append(shoulder_tilt)
+        if body_lean_offset is not None:
+            self.body_lean_offset_buffer.append(body_lean_offset)
         if distance is not None:
             self.distance_buffer.append(distance)
     
@@ -43,6 +46,7 @@ class SmoothingFilter:
             'pitch': smooth(self.pitch_buffer),
             'roll': smooth(self.roll_buffer),
             'shoulder_tilt': smooth(self.shoulder_buffer),
+            'body_lean_offset': smooth(self.body_lean_offset_buffer),
             'distance': smooth(self.distance_buffer)
         }
     
@@ -57,4 +61,5 @@ class SmoothingFilter:
         self.pitch_buffer.clear()
         self.roll_buffer.clear()
         self.shoulder_buffer.clear()
+        self.body_lean_offset_buffer.clear()
         self.distance_buffer.clear()

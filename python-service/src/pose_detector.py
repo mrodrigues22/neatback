@@ -59,6 +59,7 @@ class PostureDetector:
         self.good_head_distance = None
         self.good_head_roll = None
         self.good_shoulder_tilt = None
+        self.good_body_lean_offset = None
         
         # Add smoothing filter (window of 5 frames = ~0.25s at 20 FPS)
         self.smoothing_filter = SmoothingFilter(window_size=SMOOTHING_WINDOW_SIZE)
@@ -74,6 +75,7 @@ class PostureDetector:
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
         self.shoulder_tilt_threshold = 15  # degrees (use abs value, so catches both directions)
+        self.body_lean_threshold = 3.0  # percent of frame width (horizontal offset)
         self.yaw_threshold = 30  # degrees - ignore roll detection if head rotated beyond this
         
         # Compensation detection settings
@@ -403,6 +405,60 @@ class PostureDetector:
         
         return angle
     
+    def calculate_body_lean_offset(self, face_landmarks, pose_landmarks, frame_shape):
+        """
+        Calculate horizontal offset between shoulder midpoint and face center.
+        
+        This measures if the torso is leaning sideways by tracking how much
+        the shoulders have shifted horizontally relative to the face/head position.
+        Works even when shoulders remain level with each other.
+        
+        Args:
+            face_landmarks: MediaPipe face landmarks
+            pose_landmarks: MediaPipe pose landmarks
+            frame_shape: Shape of the frame (height, width, channels)
+        
+        Returns:
+            float: Horizontal offset as percentage of frame width
+                   - 0% = shoulders centered under face (upright)
+                   - Positive = body leaning right
+                   - Negative = body leaning left
+                   None if landmarks unavailable
+        """
+        if not pose_landmarks or len(pose_landmarks) < 13:
+            return None
+        
+        if not face_landmarks:
+            return None
+        
+        height, width = frame_shape[:2]
+        
+        # Get face center (nose tip landmark 1)
+        nose_tip = face_landmarks[1]
+        face_center_x = nose_tip.x * width
+        
+        # Get shoulder landmarks (11 = left, 12 = right)
+        left_shoulder = pose_landmarks[11]
+        right_shoulder = pose_landmarks[12]
+        
+        # Check visibility/presence confidence
+        min_visibility = 0.5
+        if (left_shoulder.visibility < min_visibility or 
+            right_shoulder.visibility < min_visibility):
+            return None
+        
+        # Calculate shoulder midpoint
+        shoulder_mid_x = ((left_shoulder.x + right_shoulder.x) / 2) * width
+        
+        # Calculate horizontal offset (pixels)
+        horizontal_offset = shoulder_mid_x - face_center_x
+        
+        # Normalize by frame width to make it resolution-independent
+        # Convert to percentage for easier thresholding
+        normalized_offset = (horizontal_offset / width) * 100
+        
+        return normalized_offset
+    
     def save_good_posture(self, frame, timestamp_ms):
         """Capture current posture as good posture baseline."""
         face_landmarks = self.detect_landmarks(frame, timestamp_ms)
@@ -416,17 +472,20 @@ class PostureDetector:
         # Use eye-based roll for baseline (more reliable)
         eye_roll = self.calculate_eye_roll_angle(face_landmarks, frame.shape)
         
-        # Try to get shoulder tilt
+        # Try to get shoulder tilt and body lean offset
         pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
         shoulder_tilt = None
+        body_lean_offset = None
         if pose_landmarks:
             shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
+            body_lean_offset = self.calculate_body_lean_offset(face_landmarks, pose_landmarks, frame.shape)
         
         if pitch is not None and distance is not None:
             self.good_head_pitch_angle = pitch
             self.good_head_roll = eye_roll if eye_roll is not None else 0
             self.good_head_distance = distance
             self.good_shoulder_tilt = shoulder_tilt if shoulder_tilt is not None else 0
+            self.good_body_lean_offset = body_lean_offset if body_lean_offset is not None else 0
             
             # Reset smoothing filter to start fresh
             self.smoothing_filter.reset()
@@ -481,11 +540,13 @@ class PostureDetector:
         # Calculate body metrics
         pose_landmarks = self.detect_pose_landmarks(frame, timestamp_ms)
         shoulder_tilt = None
+        body_lean_offset = None
         if pose_landmarks:
             shoulder_tilt = self.calculate_shoulder_tilt(pose_landmarks, frame.shape)
+            body_lean_offset = self.calculate_body_lean_offset(face_landmarks, pose_landmarks, frame.shape)
         
         # Add to smoothing filter
-        self.smoothing_filter.add_measurement(pitch, eye_roll, shoulder_tilt, distance)
+        self.smoothing_filter.add_measurement(pitch, eye_roll, shoulder_tilt, body_lean_offset, distance)
         
         # Get smoothed values
         smoothed = self.smoothing_filter.get_smoothed_values()
@@ -494,6 +555,7 @@ class PostureDetector:
         pitch_smoothed = smoothed['pitch'] if smoothed['pitch'] is not None else pitch
         eye_roll_smoothed = smoothed['roll'] if smoothed['roll'] is not None else eye_roll
         shoulder_tilt_smoothed = smoothed['shoulder_tilt'] if smoothed['shoulder_tilt'] is not None else shoulder_tilt
+        body_lean_offset_smoothed = smoothed['body_lean_offset'] if smoothed['body_lean_offset'] is not None else body_lean_offset
         distance_smoothed = smoothed['distance'] if smoothed['distance'] is not None else distance
         
         # Compute face bbox for drawing
@@ -506,10 +568,12 @@ class PostureDetector:
                 'pitch_angle': pitch,
                 'roll_angle': roll,
                 'shoulder_tilt': shoulder_tilt,
+                'body_lean_offset': body_lean_offset,
                 'distance': distance,
                 'adjusted_pitch': None,
                 'adjusted_roll': None,
                 'adjusted_shoulder_tilt': None,
+                'adjusted_body_lean': None,
                 'posture_issues': [],
                 'face_bbox': face_bbox,
                 'error': 'No baseline posture saved'
@@ -519,12 +583,14 @@ class PostureDetector:
         adjusted_pitch = pitch_smoothed - self.good_head_pitch_angle
         adjusted_roll = eye_roll_smoothed - self.good_head_roll if eye_roll_smoothed is not None and self.good_head_roll is not None else 0
         adjusted_shoulder_tilt = shoulder_tilt_smoothed - self.good_shoulder_tilt if shoulder_tilt_smoothed is not None and self.good_shoulder_tilt is not None else 0
+        adjusted_body_lean = body_lean_offset_smoothed - self.good_body_lean_offset if body_lean_offset_smoothed is not None and self.good_body_lean_offset is not None else 0
         
         # Determine if posture is bad (using smoothed measurements)
         is_bad, issues = self._is_posture_bad(
             adjusted_pitch, 
             adjusted_roll, 
             adjusted_shoulder_tilt,
+            adjusted_body_lean,
             distance_smoothed, 
             self.good_head_distance,
             yaw  # Pass yaw to check if head is rotated
@@ -575,7 +641,7 @@ class PostureDetector:
             else:
                 return abs(value) > enter_threshold
     
-    def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, current_distance, good_distance, yaw=None):
+    def _is_posture_bad(self, adjusted_pitch, adjusted_roll, adjusted_shoulder_tilt, adjusted_body_lean, current_distance, good_distance, yaw=None):
         """Determine if current posture is bad based on thresholds with hysteresis.
         
         Returns:
@@ -624,6 +690,15 @@ class PostureDetector:
                     is_lower_bad=False
                 ):
                     reasons.append('shoulder_tilt')
+            
+            # Check body lean (horizontal offset of shoulders from face)
+            if adjusted_body_lean is not None:
+                if self._check_threshold_with_hysteresis(
+                    adjusted_body_lean,
+                    self.thresholds['body_lean'],
+                    is_lower_bad=False
+                ):
+                    reasons.append('body_lean')
             
             # Check for compensation pattern (for informational purposes)
             is_compensating, compensation_desc = self._detect_compensation(
