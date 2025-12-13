@@ -116,8 +116,6 @@ public sealed partial class MainPage : Page
                 }
                 if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
                 if (_statusText != null) _statusText.Text = "Monitoring started. Please save your good posture!";
-                
-                System.Diagnostics.Debug.WriteLine("Monitoring started successfully");
             }
             else
             {
@@ -131,7 +129,6 @@ public sealed partial class MainPage : Page
             if (_loadingOverlay != null) _loadingOverlay.Visibility = Visibility.Collapsed;
             
             if (_statusText != null) _statusText.Text = $"Error: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Error starting monitoring: {ex}");
         }
     }
     
@@ -214,7 +211,7 @@ public sealed partial class MainPage : Page
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error displaying frame: {ex.Message}");
+                    // Error displaying frame
                 }
             }
             

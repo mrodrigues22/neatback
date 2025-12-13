@@ -62,8 +62,7 @@ public class NotificationService : IDisposable
         }
         catch (Exception ex)
         {
-            // Log the error so we can see what's happening
-            System.Diagnostics.Debug.WriteLine($"Failed to play notification sound: {ex.Message}");
+            // Failed to play notification sound
         }
     }
     

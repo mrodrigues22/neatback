@@ -19,27 +19,18 @@ class PostureService:
         """Run the WebSocket server and wait for client connections."""
         self.running = True
         
-        print("="*60)
-        print("Slouti Posture Analysis Service")
-        print("="*60)
-        print("Starting WebSocket server...")
-        print("\nWaiting for client connection...")
-        print("="*60)
-        
         try:
             # Start WebSocket server (runs indefinitely)
             await self.ws_server.start()
         except KeyboardInterrupt:
-            print("\nShutting down...")
+            pass
         finally:
             self.running = False
             self.detector.close()
-            print("Service stopped.")
 
 if __name__ == "__main__":
     service = PostureService()
     try:
         asyncio.run(service.run())
     except KeyboardInterrupt:
-        print("\nStopping...")
         service.running = False

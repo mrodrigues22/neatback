@@ -62,7 +62,6 @@ namespace Slouti
                 
                 if (!File.Exists(pythonServicePath))
                 {
-                    Debug.WriteLine($"Python service not found at: {pythonServicePath}");
                     return;
                 }
                 
@@ -78,31 +77,17 @@ namespace Slouti
                     }
                 };
                 
-                _pythonServiceProcess.OutputDataReceived += (sender, e) =>
-                {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        Debug.WriteLine($"[Python Service] {e.Data}");
-                    }
-                };
+                _pythonServiceProcess.OutputDataReceived += (sender, e) => { };
                 
-                _pythonServiceProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        Debug.WriteLine($"[Python Service Error] {e.Data}");
-                    }
-                };
+                _pythonServiceProcess.ErrorDataReceived += (sender, e) => { };
                 
                 _pythonServiceProcess.Start();
                 _pythonServiceProcess.BeginOutputReadLine();
                 _pythonServiceProcess.BeginErrorReadLine();
-                
-                Debug.WriteLine($"Python service started successfully (PID: {_pythonServiceProcess.Id})");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to start Python service: {ex.Message}");
+                // Service failed to start
             }
         }
         
@@ -114,12 +99,11 @@ namespace Slouti
                 {
                     _pythonServiceProcess.Kill();
                     _pythonServiceProcess.Dispose();
-                    Debug.WriteLine("Python service stopped");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error stopping Python service: {ex.Message}");
+                // Error stopping service
             }
         }
 

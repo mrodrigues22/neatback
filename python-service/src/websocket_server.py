@@ -20,13 +20,11 @@ class WebSocketServer:
         
     async def register(self, websocket):
         self.clients.add(websocket)
-        print(f"Client connected. Total clients: {len(self.clients)}")
         if self.on_client_change:
             await self.on_client_change(True)
         
     async def unregister(self, websocket):
         self.clients.remove(websocket)
-        print(f"Client disconnected. Total clients: {len(self.clients)}")
         if self.on_client_change:
             await self.on_client_change(len(self.clients) > 0)
         
@@ -46,7 +44,7 @@ class WebSocketServer:
             async for message in websocket:
                 await self.process_message(websocket, message)
         except websockets.exceptions.ConnectionClosed:
-            print("Client connection closed")
+            pass
         finally:
             await self.unregister(websocket)
     
@@ -99,7 +97,6 @@ class WebSocketServer:
                     }))
         
         except Exception as e:
-            print(f"Error processing message: {e}")
             await websocket.send(json.dumps({
                 'type': 'error',
                 'message': str(e)
@@ -110,7 +107,6 @@ class WebSocketServer:
         if self.is_monitoring:
             return
         
-        print("Starting camera...")
         self.camera = cv2.VideoCapture(0)
         
         # Set camera properties for better performance
@@ -133,7 +129,6 @@ class WebSocketServer:
             'type': 'monitoring_started',
             'success': True
         })
-        print("Monitoring started")
     
     async def stop_monitoring(self):
         """Stop camera and monitoring loop."""
@@ -157,7 +152,6 @@ class WebSocketServer:
             'type': 'monitoring_stopped',
             'success': True
         })
-        print("Monitoring stopped")
     
     async def monitoring_loop(self):
         """Continuously capture and analyze frames."""
@@ -168,7 +162,6 @@ class WebSocketServer:
                 
                 ret, frame = self.camera.read()
                 if not ret:
-                    print("Failed to read frame")
                     await asyncio.sleep(0.033)  # ~30 FPS retry
                     continue
                 
@@ -219,9 +212,8 @@ class WebSocketServer:
                 await asyncio.sleep(0.05)
         
         except asyncio.CancelledError:
-            print("Monitoring loop cancelled")
+            pass
         except Exception as e:
-            print(f"Error in monitoring loop: {e}")
             await self.send({
                 'type': 'error',
                 'message': f'Monitoring error: {str(e)}'
@@ -268,13 +260,11 @@ class WebSocketServer:
                 'good_distance': self.detector.good_head_distance
             }))
         except Exception as e:
-            print(f"Error saving posture: {e}")
             await websocket.send(json.dumps({
                 'type': 'error',
                 'message': f'Failed to save posture: {str(e)}'
             }))
     
     async def start(self):
-        print(f"WebSocket server starting on ws://{self.host}:{self.port}")
         async with websockets.serve(self.handler, self.host, self.port):
             await asyncio.Future()

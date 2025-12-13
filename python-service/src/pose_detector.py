@@ -50,9 +50,9 @@ class PostureDetector:
                 )
                 self.pose_landmarker = self.PoseLandmarker.create_from_options(pose_options)
             except Exception as e:
-                print(f"Warning: Could not initialize Pose Landmarker: {e}")
+                pass
         else:
-            print(f"Warning: Pose model not found at {pose_model_path}. Shoulder tilt detection will be disabled.")
+            pass
         
         # Good posture baseline (None until calibrated)
         self.good_head_pitch_angle = None
@@ -380,7 +380,7 @@ class PostureDetector:
             if detection_result.pose_landmarks:
                 return detection_result.pose_landmarks[0]
         except Exception as e:
-            print(f"Error detecting pose landmarks: {e}")
+            pass
         
         return None
     
@@ -602,10 +602,6 @@ class PostureDetector:
         adjusted_shoulder_tilt = shoulder_tilt_smoothed - self.good_shoulder_tilt if shoulder_tilt_smoothed is not None and self.good_shoulder_tilt is not None else 0
         adjusted_body_lean = body_lean_offset_smoothed - self.good_body_lean_offset if body_lean_offset_smoothed is not None and self.good_body_lean_offset is not None else 0
         
-        # Debug output for diagnosis
-        if yaw is not None:
-            print(f"[YAW DEBUG] yaw={yaw:.1f}°, threshold={self.yaw_threshold}°, facing_forward={abs(yaw) < self.yaw_threshold}, body_lean={adjusted_body_lean:.2f}%")
-        
         # Determine if posture is bad (using smoothed measurements)
         is_bad, issues = self._is_posture_bad(
             adjusted_pitch, 
@@ -616,10 +612,6 @@ class PostureDetector:
             self.good_head_distance,
             yaw  # Pass yaw to check if head is rotated
         )
-        
-        # Debug output for side monitor issue
-        if yaw is not None and abs(yaw) > 20:
-            print(f"[DEBUG] Head turned: yaw={yaw:.1f}°, distance={distance_smoothed:.1f}cm, issues={issues}")
         
         return {
             'is_bad': is_bad,

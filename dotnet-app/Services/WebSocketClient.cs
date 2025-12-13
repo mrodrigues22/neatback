@@ -67,7 +67,7 @@ public class WebSocketClient
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error receiving data: {ex.Message}");
+                // Error receiving data
             }
         }
     }
@@ -105,21 +105,18 @@ public class WebSocketClient
                     break;
                 
                 case "monitoring_started":
-                    System.Diagnostics.Debug.WriteLine("Monitoring started on backend");
                     break;
                 
                 case "monitoring_stopped":
-                    System.Diagnostics.Debug.WriteLine("Monitoring stopped on backend");
                     break;
                 
                 case "error":
-                    System.Diagnostics.Debug.WriteLine($"Server error: {message.message}");
                     break;
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error handling message: {ex.Message}");
+            // Error handling message
         }
     }
     

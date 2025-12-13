@@ -58,12 +58,10 @@ class StateDebouncer:
             # Need consecutive bad frames to transition to bad
             if self.consecutive_bad_frames >= self.good_to_bad_frames:
                 self.current_state = 'bad'
-                print(f"[DEBOUNCE] State changed: good → bad (after {self.consecutive_bad_frames} frames)")
         else:  # current_state == 'bad'
             # Need consecutive good frames to transition to good
             if self.consecutive_good_frames >= self.bad_to_good_frames:
                 self.current_state = 'good'
-                print(f"[DEBOUNCE] State changed: bad → good (after {self.consecutive_good_frames} frames)")
         
         return self.current_state == 'bad'
     
