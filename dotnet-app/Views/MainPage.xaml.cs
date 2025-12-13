@@ -111,7 +111,8 @@ public sealed partial class MainPage : Page
                 if (_startButton != null)
                 {
                     _startButton.Content = "⏹ Stop Monitoring";
-                    _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
+                    _startButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 211, 211, 211));
+                    _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Black);
                 }
                 if (_savePostureButton != null) _savePostureButton.IsEnabled = true;
                 if (_statusText != null) _statusText.Text = "Monitoring started. Please save your good posture!";
@@ -157,7 +158,8 @@ public sealed partial class MainPage : Page
         if (_startButton != null)
         {
             _startButton.Content = "▶ Start Monitoring";
-            _startButton.ClearValue(Button.ForegroundProperty);
+            _startButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 16, 185, 129));
+            _startButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
         }
         if (_savePostureButton != null) _savePostureButton.IsEnabled = false;
         if (_statusText != null) _statusText.Text = "Monitoring stopped";
