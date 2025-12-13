@@ -23,6 +23,7 @@ public class WebSocketClient
     public event EventHandler<PostureData>? PostureDataReceived;
     public event EventHandler<bool>? PostureSaved;
     public event EventHandler<bool>? ThresholdsUpdated;
+    public event EventHandler? MonitoringStarted;
     
     public async Task ConnectAsync()
     {
@@ -128,6 +129,7 @@ public class WebSocketClient
                     break;
                 
                 case "monitoring_started":
+                    MonitoringStarted?.Invoke(this, EventArgs.Empty);
                     break;
                 
                 case "monitoring_stopped":
