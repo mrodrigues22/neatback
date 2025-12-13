@@ -1,0 +1,203 @@
+WHY SLOUTI REQUIRES RUNFULLTRUST CAPABILITY
+
+OVERVIEW
+
+Slouti is packaged as a Windows MSIX application but requires the "runFullTrust" restricted capability to function properly. This document explains why this capability is necessary and what it means for users.
+
+WHAT IS RUNFULLTRUST?
+
+The runFullTrust capability allows a packaged Windows app to run outside the standard UWP (Universal Windows Platform) sandbox. Apps with this capability have broader system access similar to traditional desktop applications.
+
+Without runFullTrust:
+- Apps run in a restricted sandbox
+- Cannot launch external processes
+- Limited file system access
+- Cannot interact with other processes
+
+With runFullTrust:
+- Apps can launch and manage external processes
+- Full file system access (with user permissions)
+- Can communicate with other running processes
+- Behaves more like a traditional desktop application
+
+WHY SLOUTI NEEDS RUNFULLTRUST
+
+Slouti's architecture requires runFullTrust for the following critical operations:
+
+1. LAUNCHING THE PYTHON SERVICE PROCESS
+
+Slouti consists of two components:
+- .NET WinUI3 Desktop App (frontend/UI)
+- Python Service (backend/analysis engine)
+
+The desktop app must launch the Python service as a separate process when the application starts. This is done in App.xaml.cs:
+
+    var pythonServicePath = Path.Combine(installPath, "python-service", "slouti-service.exe");
+    _pythonServiceProcess = new Process();
+    _pythonServiceProcess.StartInfo = new ProcessStartInfo
+    {
+        FileName = pythonServicePath,
+        ...
+    };
+    _pythonServiceProcess.Start();
+
+UWP sandboxed apps CANNOT launch external processes. This requires runFullTrust.
+
+2. PROCESS MANAGEMENT AND CLEANUP
+
+The app actively manages the Python service lifecycle:
+
+- Checks for existing service processes: Process.GetProcessesByName("slouti-service")
+- Terminates old instances to prevent conflicts: process.Kill()
+- Monitors process state: !_pythonServiceProcess.HasExited
+- Cleans up on app exit: _pythonServiceProcess.Kill() and Dispose()
+
+These process management APIs are not available in the UWP sandbox.
+
+3. FILE SYSTEM ACCESS
+
+The app needs to access files outside its isolated app container:
+- Python service executable and scripts in the installation directory
+- MediaPipe model file (face_landmarker.task)
+- Python runtime and libraries
+- Configuration files and baseline calibration data
+
+While some file access is possible in sandbox, launching executables from these locations requires full trust.
+
+4. WEBSOCKET LOCAL COMMUNICATION
+
+The desktop app communicates with the Python service via WebSocket on localhost:8765:
+- Desktop app acts as WebSocket client
+- Python service runs WebSocket server
+- Real-time bidirectional data exchange
+
+While localhost communication might work in sandbox, the combination of process launching and network communication requires full trust for reliable operation.
+
+5. TOAST NOTIFICATIONS
+
+Slouti sends Windows toast notifications for posture alerts. While basic notifications can work in sandbox, more reliable desktop notification functionality is available with full trust, especially for packaged apps.
+
+ALTERNATIVE APPROACHES CONSIDERED
+
+Could Slouti work without runFullTrust? Here are alternatives and why they don't work:
+
+Option 1: Full Background Task
+- Problem: UWP background tasks have strict limitations on execution time and resource usage
+- Problem: Cannot access camera continuously
+- Problem: Still cannot launch external processes
+
+Option 2: In-Process Python
+- Problem: Embedding Python runtime in .NET is complex and adds significant size
+- Problem: MediaPipe and OpenCV have native dependencies difficult to package
+- Problem: Python 3.11 specific requirement for MediaPipe compatibility
+
+Option 3: Rewrite Everything in C#
+- Problem: Would require reimplementing MediaPipe Face Landmarker in C#
+- Problem: No equivalent mature face landmark detection library for .NET
+- Problem: Significant development effort with inferior results
+
+Option 4: Use App Service Extension
+- Problem: App services still run in sandbox
+- Problem: Cannot launch external processes from app service
+- Problem: Doesn't solve the core limitation
+
+Conclusion: The two-process architecture (C# frontend + Python backend) is the most practical approach, and it inherently requires runFullTrust.
+
+SECURITY IMPLICATIONS
+
+What runFullTrust Means for Security:
+
+Advantages:
+- App can perform necessary functions for posture monitoring
+- Can manage Python service lifecycle properly
+- Better integration with Windows desktop environment
+
+Considerations:
+- App runs with same privileges as user account
+- Can access files and folders the user can access
+- Users will see a trust prompt during installation
+- App is not confined to UWP sandbox restrictions
+
+Slouti's Security Measures:
+- All processing is local (no cloud/internet access)
+- No data transmission to external servers
+- Open source code for transparency and auditing
+- Minimal file system access (only what's necessary)
+- No elevation requests (runs as normal user)
+- WebSocket communication limited to localhost only
+
+INSTALLATION EXPERIENCE
+
+When users install Slouti, they will:
+
+1. See a trust prompt indicating the app requires additional permissions
+2. Be informed that the app will run with full trust
+3. Need to accept before installation proceeds
+
+This is standard behavior for packaged desktop apps that need runFullTrust capability.
+
+TECHNICAL REQUIREMENTS IN MANIFEST
+
+The Package.appxmanifest file declares the capability:
+
+<Package
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+  
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <DeviceCapability Name="webcam" />
+    <DeviceCapability Name="microphone" />
+  </Capabilities>
+</Package>
+
+Key points:
+- Must include rescap namespace for restricted capabilities
+- runFullTrust is a restricted capability requiring declaration
+- webcam capability needed for camera access
+- microphone capability declared (may not be actively used)
+
+MICROSOFT STORE SUBMISSION
+
+If submitting to Microsoft Store:
+
+Requirements:
+- Apps with runFullTrust must provide justification during submission
+- Microsoft reviews the necessity of the capability
+- App must clearly document why full trust is required
+
+Slouti's Justification:
+"Slouti requires runFullTrust to launch and manage a Python-based computer vision service that performs real-time posture analysis using MediaPipe and OpenCV. The app architecture consists of a C# WinUI3 frontend that launches and communicates with a Python backend process via WebSocket. This two-process design is necessary because:
+1. MediaPipe Face Landmarker requires Python 3.11 and has no native .NET implementation
+2. The app must launch the Python service executable on startup
+3. Process lifecycle management (start, monitor, cleanup) requires process management APIs
+4. All processing is local with no cloud dependencies, prioritizing user privacy."
+
+COMPARISON WITH OTHER APPS
+
+Many legitimate Windows Store apps use runFullTrust:
+
+- Visual Studio Code (Insiders) - Launches language servers and extensions
+- Discord - Manages voice/video processing and updates
+- Spotify - Media playback and system integration
+- Adobe Creative Cloud apps - Plugin and service management
+- Microsoft Teams - WebRTC media processing
+
+Slouti's use case is similar: managing a specialized background service for core functionality.
+
+SUMMARY
+
+Slouti REQUIRES runFullTrust because:
+1. It launches an external Python service process (core architecture requirement)
+2. It manages process lifecycle (start, monitor, kill, cleanup)
+3. It needs file system access beyond app container
+4. The architecture cannot be reasonably redesigned without this capability
+5. All alternatives are technically infeasible or would compromise functionality
+
+User Impact:
+- Higher trust prompt during installation (standard for desktop apps)
+- App runs with user-level permissions (not elevated)
+- All processing remains local and private
+- Open source code provides transparency
+
+The runFullTrust capability is essential for Slouti to function and is used responsibly for legitimate architectural requirements, not for invasive data collection or malicious purposes.
