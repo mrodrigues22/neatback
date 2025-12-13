@@ -75,8 +75,8 @@ class PostureDetector:
         self.distance_threshold = 10  # cm (closer than baseline)
         self.head_roll_threshold = 15  # degrees
         self.shoulder_tilt_threshold = 15  # degrees (use abs value, so catches both directions)
-        self.body_lean_threshold = 3.0  # percent of frame width (horizontal offset)
-        self.yaw_threshold = 30  # degrees - ignore roll detection if head rotated beyond this
+        self.body_lean_threshold = 8.0  # percent of frame width (horizontal offset) - very lenient for multi-monitor setups
+        self.yaw_threshold = 10  # degrees - ignore distance/roll/body_lean detection if head rotated beyond this
         
         # Compensation detection settings
         self.compensation_detection_enabled = True
@@ -316,8 +316,17 @@ class PostureDetector:
         
         return roll_angle
     
-    def calculate_distance(self, landmarks, frame_shape):
-        """Calculate head-to-camera distance using interpupillary distance (IPD) method."""
+    def calculate_distance(self, landmarks, frame_shape, yaw_angle=None):
+        """Calculate head-to-camera distance using interpupillary distance (IPD) method.
+        
+        Args:
+            landmarks: MediaPipe face landmarks
+            frame_shape: Shape of the frame
+            yaw_angle: Head yaw angle in degrees (optional, for compensation)
+        
+        Returns:
+            float: Distance in cm
+        """
         height, width = frame_shape[:2]
         
         # Pupil landmark indices
@@ -339,6 +348,14 @@ class PostureDetector:
             (right_x - left_x) ** 2 + 
             (right_y - left_y) ** 2
         )
+        
+        # Compensate for head rotation (yaw)
+        # When head rotates, the apparent IPD in 2D decreases by cos(yaw)
+        if yaw_angle is not None and abs(yaw_angle) > 5:
+            compensation_factor = abs(np.cos(np.radians(yaw_angle)))
+            # Avoid division by very small numbers
+            if compensation_factor > 0.2:
+                pixel_distance = pixel_distance / compensation_factor
         
         # Average human interpupillary distance in cm
         avg_ipd = 6.3
@@ -467,7 +484,7 @@ class PostureDetector:
             return False
         
         pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
-        distance = self.calculate_distance(face_landmarks, frame.shape)
+        distance = self.calculate_distance(face_landmarks, frame.shape, yaw)
         
         # Use eye-based roll for baseline (more reliable)
         eye_roll = self.calculate_eye_roll_angle(face_landmarks, frame.shape)
@@ -532,7 +549,7 @@ class PostureDetector:
         
         # Calculate face metrics
         pitch, yaw, roll = self.calculate_head_angles(face_landmarks, frame.shape)
-        distance = self.calculate_distance(face_landmarks, frame.shape)
+        distance = self.calculate_distance(face_landmarks, frame.shape, yaw)
         
         # Use eye-based roll calculation (more reliable than Euler angles)
         eye_roll = self.calculate_eye_roll_angle(face_landmarks, frame.shape)
@@ -585,6 +602,10 @@ class PostureDetector:
         adjusted_shoulder_tilt = shoulder_tilt_smoothed - self.good_shoulder_tilt if shoulder_tilt_smoothed is not None and self.good_shoulder_tilt is not None else 0
         adjusted_body_lean = body_lean_offset_smoothed - self.good_body_lean_offset if body_lean_offset_smoothed is not None and self.good_body_lean_offset is not None else 0
         
+        # Debug output for diagnosis
+        if yaw is not None:
+            print(f"[YAW DEBUG] yaw={yaw:.1f}°, threshold={self.yaw_threshold}°, facing_forward={abs(yaw) < self.yaw_threshold}, body_lean={adjusted_body_lean:.2f}%")
+        
         # Determine if posture is bad (using smoothed measurements)
         is_bad, issues = self._is_posture_bad(
             adjusted_pitch, 
@@ -595,6 +616,10 @@ class PostureDetector:
             self.good_head_distance,
             yaw  # Pass yaw to check if head is rotated
         )
+        
+        # Debug output for side monitor issue
+        if yaw is not None and abs(yaw) > 20:
+            print(f"[DEBUG] Head turned: yaw={yaw:.1f}°, distance={distance_smoothed:.1f}cm, issues={issues}")
         
         return {
             'is_bad': is_bad,
@@ -658,21 +683,22 @@ class PostureDetector:
             ):
                 reasons.append('head_pitch')
         
-        # Check distance with hysteresis (leaning forward)
-        if good_distance is not None and current_distance is not None:
-            distance_deviation = good_distance - current_distance
-            if self._check_threshold_with_hysteresis(
-                distance_deviation,
-                self.thresholds['distance'],
-                is_lower_bad=False
-            ):
-                reasons.append('distance')
-        
-        # Only check roll/tilt if head is not rotated significantly
+        # Only check distance/roll/tilt if head is not rotated significantly
         # This prevents false positives when user is looking left/right
         head_is_facing_forward = yaw is None or abs(yaw) < self.yaw_threshold
         
         if head_is_facing_forward:
+            # Check distance with hysteresis (leaning forward)
+            # Distance detection using IPD is only reliable when facing camera
+            if good_distance is not None and current_distance is not None:
+                distance_deviation = good_distance - current_distance
+                if self._check_threshold_with_hysteresis(
+                    distance_deviation,
+                    self.thresholds['distance'],
+                    is_lower_bad=False
+                ):
+                    reasons.append('distance')
+            
             # Check head roll with hysteresis (head tilted sideways)
             if adjusted_roll is not None:
                 if self._check_threshold_with_hysteresis(
